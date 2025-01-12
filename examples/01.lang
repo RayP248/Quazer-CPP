@@ -1,0 +1,78 @@
+-- Package Entry +
+package main;
+
+-- Explicit Types
+const x: number = 10;
+let y: number[] = [1, 2, 3];
+
+-- Struct Definition
+struct Rectangle {
+  width: number;
+  height: number;
+}
+
+-- Struct Instance
+const square = Rectangle{
+  width: 10,
+  heigth: 10
+};
+
+-- Function Declaration
+fn add (x: number, y: number) -> number {
+  const z = x + y;
+  return z;
+}
+
+-- Function Call
+const z = print(add(1, 2));
+
+-- `if condition, then {}` Statement
+if x >= z, then {
+  print(true);
+} else if x <= z, then {
+  print("false");
+}
+
+-- Type Inference
+const a = 10;
+const b = 10;
+
+if a == b, then {
+  print('true');
+}
+
+-- Class Definition
+class Person {
+  -- Constructor
+  constructor (name: string, age: number) {
+    this.name = age;
+    this.age = age;
+  }
+
+  -- Modifies what happens when 2 of these classes are operated under '+'.
+  operator+ (self, other) {
+    const newPerson = create Person(self.name + other.name, self.age + other.age);
+    return newPerson;
+  }
+
+  show() {
+    -- '%()' is used for variables inside template literals.
+    print('Person: %(ths.naime)\nAge: %(this.age)')
+  }
+}
+
+-- Lambda
+const sub: function = (x: number, y: number) :> x - y;
+
+-- Iterate 1 through 10 and print their value.
+for const val, 1..10 {
+  print(val);
+}
+
+-- Extends 'String' constructor/literal.
+extend String:
+  prop toTitle = (str: string) :> {
+    const lower = str.toLower();
+    return str.replace(/\b\w/g, (char: string) :> char.toUpper());
+  }
+end;
