@@ -4,7 +4,7 @@
 #include <fstream>
 
 int main() {
-  std::ifstream file("./examples/01.lang");
+  std::ifstream file("./examples/02.lang");
   if (!file) {
     std::cerr << "Unable to open file";
     return 1;

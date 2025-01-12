@@ -1,0 +1,27 @@
+-- Package Entry +
+package main;
+
+-- Explicit Types
+const x: number = 10;
+let y: number[] = [1, 2, 3];
+
+-- Struct Definition
+struct Rectangle {
+  width: number;
+  height: number;
+}
+
+-- Struct Instance
+const square = Rectangle{
+  width: 10,
+  heigth: 10
+};
+
+-- Function Declaration
+fn add (x: number, y: number) -> number {
+  const z = x + y;
+  return z;
+}
+
+-- Function Call
+const z = print(add(1, 2));
