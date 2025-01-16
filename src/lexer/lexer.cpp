@@ -74,7 +74,8 @@ namespace lexer {
               << columnstart << "-" << columnend << '\n';
   }
 
-  std::string tokenKindToString(TokenKind kind) {
+  std::string tokenKindToString(TokenKind kind)
+  {
     switch (kind) {
       case NUMBER:
         return "NUMBER";
@@ -197,7 +198,11 @@ namespace lexer {
       case EOF_:
         return "EOF";
       default:
-        throw std::runtime_error("Unknown token kind");
+        // std::cout << "Unknown token kind with token: ";
+        // token.debug();
+        //  std::cerr << "Unknown token kind: " << kind << std::endl;
+        return "UNKNOWN";
+        // throw std::runtime_error("Unknown token kind: " + std::to_string(kind));
     }
   }
 
@@ -216,6 +221,24 @@ namespace lexer {
   }
 
   std::vector<lexer::Token> tokenize(std::string input) {
+    // Strip UTF-8 BOM if present
+    if (input.size() >= 3 &&
+        (unsigned char)input[0] == 0xEF &&
+        (unsigned char)input[1] == 0xBB &&
+        (unsigned char)input[2] == 0xBF)
+    {
+      input.erase(0, 3);
+    }
+
+    // Check for any non-ASCII punctuation just after stripping BOM
+    for (char c : input)
+    {
+      if (static_cast<unsigned char>(c) > 127)
+      {
+        throw std::runtime_error("Non-ASCII character found: code " + std::to_string((unsigned char)c));
+      }
+    }
+
     std::vector<lexer::Token> tokens;
     tokens.reserve(100); // Reserve an estimated capacity for tokens
     std::string::const_iterator it = input.begin();
@@ -223,44 +246,18 @@ namespace lexer {
     int col = 1;
     int line = 1;
 
-    auto handleGrouping = [&](char op) {
+    auto handleGrouping = [&](char op)
+    {
       tokens.push_back(newToken(ops[std::string(1, op)], std::string(1, op), line, line, col, col + 1));
       col++;
       ++it;
     };
 
-    auto handleOperator = [&](std::string op) {
-      if (std::distance(it, end) > 1) {
-        std::string twoCharOp(it, it + 2);
-        if (ops.find(twoCharOp) != ops.end()) {
-          tokens.push_back(newToken(ops[twoCharOp], std::move(twoCharOp), line, line, col, col + 2));
-          col += 2;
-          it += 2;
-          return;
-        }
-      }
-      std::string oneCharOp(1, *it);
-      if (ops.find(oneCharOp) != ops.end()) {
-        if(oneCharOp == "\'" || oneCharOp == "\"") {
-          std::string value;
-          ++it;
-          col++;
-          while (it != end && *it != oneCharOp[0]) {
-            value.push_back(*it);
-            ++it;
-            col++;
-          }
-          tokens.push_back(newToken(lexer::TokenKind::STRING, std::move(value), line, line, col - value.size(), col));
-          ++it;
-          col++;
-          return;
-        }
-        tokens.push_back(newToken(ops[oneCharOp], std::move(oneCharOp), line, line, col, col + 1));
-        col++;
-        ++it;
-        return;
-      }
-      throw std::runtime_error("Unknown operator: " + op);
+    auto handleOperator = [&](const std::string &op)
+    {
+      tokens.push_back(newToken(ops[op], op, line, line, col, col + op.size()));
+      col += op.size();
+      it += op.size();
     };
 
     while (it != end) {
@@ -286,73 +283,9 @@ namespace lexer {
           col++;
           ++it;
           break;
-        case '(':
-        case ')':
-        case '{':
-        case '}':
-        case '[':
-        case ']':
-          handleGrouping(*it);
-          break;
-        //TODO: Add support for ALL multi AND single character operators by adding their cases here.
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '%':
-        case '.':
-        case ':':
-        case ';':
-        case ',':
-        case '=':
-        case '!':
-        case '>':
-        case '<':
-        case '&':
-        case '|':
-        case '\'':
-        case '"':
-        case '\\':
-        case '`':
-          handleOperator(std::string(1, *it));
-          break;
+        // TODO: Add support for ALL multi AND single character operators by adding their cases here.
         default:
-          // Check first if the next one or two chars form an operator
-          {
-            // 1) First check two-char operator
-            if (std::distance(it, end) > 1) {
-              std::string twoCharOp(it, it + 2);
-              if (ops.find(twoCharOp) != ops.end()) {
-                tokens.push_back(newToken(ops[twoCharOp], twoCharOp, line, line, col, col + 2));
-                it += 2; col += 2;
-                continue;
-              }
-            }
-            // 2) Then check single-char operator
-            std::string oneCharOp(1, *it);
-            if (ops.find(oneCharOp) != ops.end()) {
-              // Handle string literals if ' or "
-              if (oneCharOp == "'" || oneCharOp == "\"") {
-                std::string value;
-                ++it;
-                col++;
-                while (it != end && *it != oneCharOp[0]) {
-                  value.push_back(*it);
-                  ++it;
-                  col++;
-                }
-                tokens.push_back(newToken(lexer::TokenKind::STRING, std::move(value), line, line, col - value.size(), col));
-                ++it;
-                col++;
-              } else {
-                tokens.push_back(newToken(ops[oneCharOp], oneCharOp, line, line, col, col + 1));
-                ++it; col++;
-              }
-              continue;
-            }
-          }
-
-          // 3) If not operator, proceed with numeric or identifier parse
+        {
           if (std::isdigit(*it)) {
             std::string num;
             while (it != end && (std::isdigit(*it) || *it == '.' || *it == '_')) {
@@ -384,10 +317,25 @@ namespace lexer {
               tokens.push_back(newToken(lexer::TokenKind::IDENTIFIER,
                                         std::move(value), line, line, col - value.size(), col));
             }
-          } else {
+          }
+          else if (
+              (it + 1 != end && ops.find(std::string(1, *it) + *(it + 1)) != ops.end()) || ops.find(std::string(1, *it)) != ops.end())
+          {
+            if (ops.find(std::string(1, *it) + *(it + 1)) != ops.end())
+            {
+              handleOperator(std::string(1, *it) + *(it + 1));
+            }
+            else
+            {
+              handleOperator(std::string(1, *it));
+            }
+          }
+          else
+          {
             throw std::runtime_error("Unknown token: " + std::string(1, *it));
           }
           break;
+        }
       }
     }
     tokens.push_back(newToken(lexer::TokenKind::EOF_, "", line, line, col, col));
