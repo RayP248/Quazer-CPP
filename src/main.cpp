@@ -1,10 +1,11 @@
 #include "./lexer/lexer.h"
+#include "./global.h"
 #include <string>
 #include <iostream>
 #include <fstream>
 
 int main() {
-  std::ifstream file("./examples/02.lang");
+  std::ifstream file(global::currfile);
   if (!file) {
     std::cerr << "Unable to open file";
     return 1;

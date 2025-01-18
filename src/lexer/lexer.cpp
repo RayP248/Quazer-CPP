@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "../error/error.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -231,11 +232,22 @@ namespace lexer {
     }
 
     // Check for any non-ASCII punctuation just after stripping BOM
+    int tcol = 1;
+    int tline = 1;
     for (char c : input)
     {
+      if (c == '\n')
+      {
+        tline++;
+        tcol = 0;
+      }
+      else
+      {
+        tcol++;
+      }
       if (static_cast<unsigned char>(c) > 127)
       {
-        throw std::runtime_error("Non-ASCII character found: code " + std::to_string((unsigned char)c));
+        new error::Error(error::ErrorCode::LEXER_ERROR, "Non-ASCII character found: code " + std::to_string((unsigned char)c), tline, tline, tcol, tcol + 1, "lexer.cpp : tokenize : for loop : if statement");
       }
     }
 
@@ -283,7 +295,6 @@ namespace lexer {
           col++;
           ++it;
           break;
-        // TODO: Add support for ALL multi AND single character operators by adding their cases here.
         default:
         {
           if (std::isdigit(*it)) {
@@ -332,7 +343,7 @@ namespace lexer {
           }
           else
           {
-            throw std::runtime_error("Unknown token: " + std::string(1, *it));
+            error::Error(error::ErrorCode::LEXER_ERROR, "Unknown token: " + std::string(1, *it), line, -1, col, -1, "lexer.cpp : switch statement : default case : else");
           }
           break;
         }
