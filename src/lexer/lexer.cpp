@@ -78,132 +78,128 @@ namespace lexer {
   std::string tokenKindToString(TokenKind kind)
   {
     switch (kind) {
-      case NUMBER:
-        return "NUMBER";
-      case IDENTIFIER:
-        return "IDENTIFIER";
-      case STRING:
-        return "STRING";
-      case PLUS:
-        return "PLUS";
-      case MINUS:
-        return "MINUS";
-      case STAR:
-        return "STAR";
-      case SLASH:
-        return "SLASH";
-      case PERCENT:
-        return "PERCENT";
-      case TYPE_ARROW:
-        return "TYPE_ARROW";
-      case LAMBDA_ARROW:
-        return "LAMBDA_ARROW";
-      case DOT:
-        return "DOT";
-      case DOT_DOT:
-        return "DOT_DOT";
-      case EQUAL:
-        return "EQUAL";
-      case NOT:
-        return "NOT";
-      case NOT_EQUAL:
-        return "NOT_EQUAL";
-      case GREATER:
-        return "GREATER";
-      case GREATER_EQUAL:
-        return "GREATER_EQUAL";
-      case LESS:
-        return "LESS";
-      case LESS_EQUAL:
-        return "LESS_EQUAL";
-      case AND:
-        return "AND";
-      case OR:
-        return "OR";
-      case ASSIGNMENT:
-        return "ASSIGNMENT";
-      case PLUS_ASSIGNMENT:
-        return "PLUS_ASSIGNMENT";
-      case MINUS_ASSIGNMENT:
-        return "MINUS_ASSIGNMENT";
-      case STAR_ASSIGNMENT:
-        return "STAR_ASSIGNMENT";
-      case SLASH_ASSIGNMENT:
-        return "SLASH_ASSIGNMENT";
-      case PERCENT_ASSIGNMENT:
-        return "PERCENT_ASSIGNMENT";
-      case OPEN_BRACE:
-        return "OPEN_BRACE";
-      case CLOSE_BRACE:
-        return "CLOSE_BRACE";
-      case OPEN_CURLY:
-        return "OPEN_CURLY";
-      case CLOSE_CURLY:
-        return "CLOSE_CURLY";
-      case OPEN_PAREN:
-        return "OPEN_PAREN";
-      case CLOSE_PAREN:
-        return "CLOSE_PAREN";
-      case COLON:
-        return "COLON";
-      case SEMICOLON:
-        return "SEMICOLON";
-      case COMMA:
-        return "COMMA";
-      case SINGLE_QUOTE:
-        return "SINGLE_QUOTE";
-      case DOUBLE_QUOTE:
-        return "DOUBLE_QUOTE";
-      case DASH_DASH:
-        return "DASH_DASH";
-      case BACK_SLASH:
-        return "BACK_SLASH";
-      case BACK_TICK:
-        return "BACK_TICK";
-      case PACKAGE:
-        return "PACKAGE";
-      case CONST:
-        return "CONST";
-      case LET:
-        return "LET";
-      case STRUCT:
-        return "STRUCT";
-      case FN:
-        return "FN";
-      case RETURN:
-        return "RETURN";
-      case IF:
-        return "IF";
-      case ELSE:
-        return "ELSE";
-      case FOR:
-        return "FOR";
-      case THEN:
-        return "THEN";
-      case CLASS:
-        return "CLASS";
-      case CONSTRUCTOR:
-        return "CONSTRUCTOR";
-      case OPERATOR:
-        return "OPERATOR";
-      case CREATE:
-        return "CREATE";
-      case EXTEND:
-        return "EXTEND";
-      case PROP:
-        return "PROP";
-      case END:
-        return "END";
-      case REGEXP:
-        return "REGEXP";
-      case EOF_:
-        return "EOF";
-      default:
-        // std::cout << "Unknown token kind with token: ";
-        // token.debug();
-        //  std::cerr << "Unknown token kind: " << kind << std::endl;
-        return "UNKNOWN";
-        // throw std::runtime_error("Unknown token kind: " + std::to_string(kind));
+    case TokenKind::NUMBER:
+      return "NUMBER";
+    case TokenKind::IDENTIFIER:
+      return "IDENTIFIER";
+    case TokenKind::STRING:
+      return "STRING";
+    case TokenKind::PLUS:
+      return "PLUS";
+    case TokenKind::MINUS:
+      return "MINUS";
+    case TokenKind::STAR:
+      return "STAR";
+    case TokenKind::SLASH:
+      return "SLASH";
+    case TokenKind::PERCENT:
+      return "PERCENT";
+    case TokenKind::TYPE_ARROW:
+      return "TYPE_ARROW";
+    case TokenKind::LAMBDA_ARROW:
+      return "LAMBDA_ARROW";
+    case TokenKind::DOT:
+      return "DOT";
+    case TokenKind::DOT_DOT:
+      return "DOT_DOT";
+    case TokenKind::EQUAL:
+      return "EQUAL";
+    case TokenKind::NOT:
+      return "NOT";
+    case TokenKind::NOT_EQUAL:
+      return "NOT_EQUAL";
+    case TokenKind::GREATER:
+      return "GREATER";
+    case TokenKind::GREATER_EQUAL:
+      return "GREATER_EQUAL";
+    case TokenKind::LESS:
+      return "LESS";
+    case TokenKind::LESS_EQUAL:
+      return "LESS_EQUAL";
+    case TokenKind::AND:
+      return "AND";
+    case TokenKind::OR:
+      return "OR";
+    case TokenKind::ASSIGNMENT:
+      return "ASSIGNMENT";
+    case TokenKind::PLUS_ASSIGNMENT:
+      return "PLUS_ASSIGNMENT";
+    case TokenKind::MINUS_ASSIGNMENT:
+      return "MINUS_ASSIGNMENT";
+    case TokenKind::STAR_ASSIGNMENT:
+      return "STAR_ASSIGNMENT";
+    case TokenKind::SLASH_ASSIGNMENT:
+      return "SLASH_ASSIGNMENT";
+    case TokenKind::PERCENT_ASSIGNMENT:
+      return "PERCENT_ASSIGNMENT";
+    case TokenKind::OPEN_BRACE:
+      return "OPEN_BRACE";
+    case TokenKind::CLOSE_BRACE:
+      return "CLOSE_BRACE";
+    case TokenKind::OPEN_CURLY:
+      return "OPEN_CURLY";
+    case TokenKind::CLOSE_CURLY:
+      return "CLOSE_CURLY";
+    case TokenKind::OPEN_PAREN:
+      return "OPEN_PAREN";
+    case TokenKind::CLOSE_PAREN:
+      return "CLOSE_PAREN";
+    case TokenKind::COLON:
+      return "COLON";
+    case TokenKind::SEMICOLON:
+      return "SEMICOLON";
+    case TokenKind::COMMA:
+      return "COMMA";
+    case TokenKind::SINGLE_QUOTE:
+      return "SINGLE_QUOTE";
+    case TokenKind::DOUBLE_QUOTE:
+      return "DOUBLE_QUOTE";
+    case TokenKind::DASH_DASH:
+      return "DASH_DASH";
+    case TokenKind::BACK_SLASH:
+      return "BACK_SLASH";
+    case TokenKind::BACK_TICK:
+      return "BACK_TICK";
+    case TokenKind::PACKAGE:
+      return "PACKAGE";
+    case TokenKind::CONST:
+      return "CONST";
+    case TokenKind::LET:
+      return "LET";
+    case TokenKind::STRUCT:
+      return "STRUCT";
+    case TokenKind::FN:
+      return "FN";
+    case TokenKind::RETURN:
+      return "RETURN";
+    case TokenKind::IF:
+      return "IF";
+    case TokenKind::ELSE:
+      return "ELSE";
+    case TokenKind::FOR:
+      return "FOR";
+    case TokenKind::THEN:
+      return "THEN";
+    case TokenKind::CLASS:
+      return "CLASS";
+    case TokenKind::CONSTRUCTOR:
+      return "CONSTRUCTOR";
+    case TokenKind::OPERATOR:
+      return "OPERATOR";
+    case TokenKind::CREATE:
+      return "CREATE";
+    case TokenKind::EXTEND:
+      return "EXTEND";
+    case TokenKind::PROP:
+      return "PROP";
+    case TokenKind::END:
+      return "END";
+    case TokenKind::REGEXP:
+      return "REGEXP";
+    case TokenKind::EOF_:
+      return "EOF";
+    default:
+      return "UNKNOWN";
     }
   }
 
@@ -247,7 +243,7 @@ namespace lexer {
       }
       if (static_cast<unsigned char>(c) > 127)
       {
-        new error::Error(error::ErrorCode::LEXER_ERROR, "Non-ASCII character found: code " + std::to_string((unsigned char)c), tline, tline, tcol, tcol + 1, "lexer.cpp : tokenize : for loop : if statement");
+        new error::Error(error::ErrorCode::LEXER_ERROR, "Non-ASCII character found: code " + std::to_string((unsigned char)c), tline, tline, tcol, tcol + 1, "lexer.cpp : tokenize : for loop : if statement", error::ErrorImportance::CRITICAL);
       }
     }
 
@@ -343,7 +339,12 @@ namespace lexer {
           }
           else
           {
-            error::Error(error::ErrorCode::LEXER_ERROR, "Unknown token: " + std::string(1, *it), line, -1, col, -1, "lexer.cpp : switch statement : default case : else");
+            error::Error(error::ErrorCode::LEXER_ERROR, "Unknown token: '" + std::string(1, *it) + "'",
+                         line, -1, col, -1,
+                         "lexer.cpp : switch statement : default case : else",
+                         error::ErrorImportance::CRITICAL);
+            ++it;
+            ++col;
           }
           break;
         }
@@ -352,4 +353,6 @@ namespace lexer {
     tokens.push_back(newToken(lexer::TokenKind::EOF_, "", line, line, col, col));
     return tokens;
   }
+
+  // Ensure only one definition of each function exists
 }

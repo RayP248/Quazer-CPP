@@ -1,0 +1,21 @@
+Program {
+  kind: "Program",
+  body: [
+    ExpressionStatement {
+      kind: "ExpressionStatement",
+      linestart: 1,
+      lineend: 1,
+      columnstart: 1,
+      columnend: 13,
+      expression:
+              columnstar {
+          kind: "      columnstar",
+          linestart: 1,
+          lineend: 1,
+          columnstart: 1,
+          columnend: 13
+        }
+    }
+  ]
+}
+

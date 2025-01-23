@@ -6,82 +6,84 @@
 #include <vector>
 
 namespace lexer {
-  enum TokenKind {
-    //Literals
+  enum class TokenKind
+  {
+    // Literals
     NUMBER,
     IDENTIFIER,
     STRING,
 
-    //Operators
-    PLUS, // +
-    MINUS, // -
-    STAR, // *
-    SLASH, // /
-    PERCENT, // %
-    TYPE_ARROW, // ->
+    // Operators
+    PLUS,         // +
+    MINUS,        // -
+    STAR,         // *
+    SLASH,        // /
+    PERCENT,      // %
+    TYPE_ARROW,   // ->
     LAMBDA_ARROW, // :>
-    DOT, // .
-    DOT_DOT, // ..
+    DOT,          // .
+    DOT_DOT,      // ..
 
-    //Logical
-    EQUAL, // ==
-    NOT, // !
-    NOT_EQUAL, // !=
-    GREATER, // >
+    // Logical
+    EQUAL,         // ==
+    NOT,           // !
+    NOT_EQUAL,     // !=
+    GREATER,       // >
     GREATER_EQUAL, // >=
-    LESS, // <
-    LESS_EQUAL, // <=
-    AND, // &&
-    OR, // ||
+    LESS,          // <
+    LESS_EQUAL,    // <=
+    AND,           // &&
+    OR,            // ||
 
-    //Assignment
-    ASSIGNMENT, // =
-    PLUS_ASSIGNMENT, // +=
-    MINUS_ASSIGNMENT, // -=
-    STAR_ASSIGNMENT, // *=
-    SLASH_ASSIGNMENT, // /=
+    // Assignment
+    ASSIGNMENT,         // =
+    PLUS_ASSIGNMENT,    // +=
+    MINUS_ASSIGNMENT,   // -=
+    STAR_ASSIGNMENT,    // *=
+    SLASH_ASSIGNMENT,   // /=
     PERCENT_ASSIGNMENT, // %=
 
-    //Grouping
-    OPEN_PAREN, // (
+    // Grouping
+    OPEN_PAREN,  // (
     CLOSE_PAREN, // )
-    OPEN_BRACE, // [
+    OPEN_BRACE,  // [
     CLOSE_BRACE, // ]
-    OPEN_CURLY, // {
+    OPEN_CURLY,  // {
     CLOSE_CURLY, // }
 
-    //Symbols
-    COLON, // :
-    SEMICOLON, // ;
-    COMMA, // ,
+    // Symbols
+    COLON,        // :
+    SEMICOLON,    // ;
+    COMMA,        // ,
     SINGLE_QUOTE, // '
     DOUBLE_QUOTE, // "
-    DASH_DASH, // --
-    BACK_SLASH, // \ //
-    BACK_TICK, // `
+    DASH_DASH,    // --
+    BACK_SLASH,   // \ //
+    BACK_TICK,    // `
 
-    //Keywords
-    PACKAGE, // package
-    CONST, // const
-    LET, // let
-    STRUCT, // struct
-    FN, // fn
-    RETURN, // return
-    IF, // if
-    ELSE, // else
-    THEN, // then
-    CLASS, // class
+    // Keywords
+    PACKAGE,     // package
+    CONST,       // const
+    LET,         // let
+    STRUCT,      // struct
+    FN,          // fn
+    RETURN,      // return
+    IF,          // if
+    ELSE,        // else
+    THEN,        // then
+    CLASS,       // class
     CONSTRUCTOR, // constructor
-    OPERATOR, // operator
-    CREATE, // create
-    FOR, // for
-    EXTEND, // extend
-    PROP, // prop
-    END, // end
+    OPERATOR,    // operator
+    CREATE,      // create
+    FOR,         // for
+    EXTEND,      // extend
+    PROP,        // prop
+    END,         // end
 
-    //Misc
+    // Misc
     REGEXP, // / /
-    EOF_, // End of file
+    EOF_,   // End of file
+    UNKNOWN
   };
 
   struct Token {

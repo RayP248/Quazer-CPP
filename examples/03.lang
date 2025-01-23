@@ -1,4 +1,6 @@
 fn add(x: number, y: number) -> number {
   return x + y + 1 - 2;
-}@
+} @
 print(add(1.4, 3));
+
+@
