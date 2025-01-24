@@ -58,8 +58,7 @@ namespace error
     global::errors.push_back(*this);
     if (importance == ErrorImportance::CRITICAL)
     {
-      std::cerr << "Critical error encountered. Terminating.\n";
-      exit(1); // Terminate gracefully on critical errors
+      this->print(true, true);
     }
   }
 

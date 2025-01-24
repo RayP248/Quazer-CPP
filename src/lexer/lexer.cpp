@@ -70,12 +70,12 @@ namespace lexer {
   };
 
   void Token::debug() const {
-    std::cout << tokenKindToString(kind) << " (" << value << ") "
+    std::cout << token_kind_to_string(kind) << " (" << value << ") "
               << linestart << "-" << lineend << " : "
               << columnstart << "-" << columnend << '\n';
   }
 
-  std::string tokenKindToString(TokenKind kind)
+  std::string token_kind_to_string(TokenKind kind)
   {
     switch (kind) {
     case TokenKind::NUMBER:
@@ -203,7 +203,8 @@ namespace lexer {
     }
   }
 
-  lexer::Token newToken(lexer::TokenKind kind, std::string value, int linestart, int lineend, int columnstart, int columnend) {
+  lexer::Token new_token(lexer::TokenKind kind, std::string value, int linestart, int lineend, int columnstart, int columnend)
+  {
     lexer::Token token;
     token.kind = kind;
     token.value = std::move(value);
@@ -254,16 +255,16 @@ namespace lexer {
     int col = 1;
     int line = 1;
 
-    auto handleGrouping = [&](char op)
+    auto handle_grouping = [&](char op)
     {
-      tokens.push_back(newToken(ops[std::string(1, op)], std::string(1, op), line, line, col, col + 1));
+      tokens.push_back(new_token(ops[std::string(1, op)], std::string(1, op), line, line, col, col + 1));
       col++;
       ++it;
     };
 
-    auto handleOperator = [&](const std::string &op)
+    auto handle_operator = [&](const std::string &op)
     {
-      tokens.push_back(newToken(ops[op], op, line, line, col, col + op.size()));
+      tokens.push_back(new_token(ops[op], op, line, line, col, col + op.size()));
       col += op.size();
       it += op.size();
     };
@@ -303,7 +304,7 @@ namespace lexer {
               num.push_back(*it);
               ++it; col++;
             }
-            tokens.push_back(newToken(lexer::TokenKind::NUMBER, std::move(num), line, line, col - num.size(), col));
+            tokens.push_back(new_token(lexer::TokenKind::NUMBER, std::move(num), line, line, col - num.size(), col));
           } else if (std::isalpha(*it)) {
             std::string value;
             while (it != end && (std::isalpha(*it) || std::isdigit(*it) || *it == '_')) {
@@ -318,11 +319,13 @@ namespace lexer {
               lower.push_back(std::tolower(static_cast<unsigned char>(c)));
             }
             if (reserved_keywords.find(lower) != reserved_keywords.end()) {
-              tokens.push_back(newToken(reserved_keywords[lower],
-                                        std::move(value), line, line, col - value.size(), col));
-            } else {
-              tokens.push_back(newToken(lexer::TokenKind::IDENTIFIER,
-                                        std::move(value), line, line, col - value.size(), col));
+              tokens.push_back(new_token(reserved_keywords[lower],
+                                         std::move(value), line, line, col - value.size(), col));
+            }
+            else
+            {
+              tokens.push_back(new_token(lexer::TokenKind::IDENTIFIER,
+                                         std::move(value), line, line, col - value.size(), col));
             }
           }
           else if (
@@ -330,11 +333,11 @@ namespace lexer {
           {
             if (ops.find(std::string(1, *it) + *(it + 1)) != ops.end())
             {
-              handleOperator(std::string(1, *it) + *(it + 1));
+              handle_operator(std::string(1, *it) + *(it + 1));
             }
             else
             {
-              handleOperator(std::string(1, *it));
+              handle_operator(std::string(1, *it));
             }
           }
           else
@@ -350,9 +353,7 @@ namespace lexer {
         }
       }
     }
-    tokens.push_back(newToken(lexer::TokenKind::EOF_, "", line, line, col, col));
+    tokens.push_back(new_token(lexer::TokenKind::EOF_, "", line, line, col, col));
     return tokens;
   }
-
-  // Ensure only one definition of each function exists
 }

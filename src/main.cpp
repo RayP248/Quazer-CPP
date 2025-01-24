@@ -1,6 +1,6 @@
+#include "./global.h"
 #include "./lexer/lexer.h"
 #include "./parser/parser.h"
-#include "./global.h"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -70,230 +70,117 @@ Program {
   ]
 }
 */
-static void printAST(const ast::Program *stmt, int indent = 0)
+
+static std::string printAST(const ast::Program *stmt, int indent = 0)
 {
+  std::string output;
   try
   {
     if (!stmt)
-      return;
+      return output;
 
     auto indentFunc = [](int indent)
     {
-      for (int i = 0; i < indent; i++)
-        std::cout << " ";
+      return std::string(indent, ' ');
     };
 
-    // Prints any Statement with dynamic checks for sub-fields
-    std::function<void(const ast::Statement *, int)> printStmt;
-    printStmt = [&](const ast::Statement *node, int level)
+    std::function<std::string(const ast::Statement *, int)> printStmt;
+    std::function<std::string(const ast::Expression *, int)> printExpr;
+
+    printExpr = [&](const ast::Expression *node, int level) -> std::string
     {
       if (!node)
-        return;
-      indentFunc(level);
-      std::cout << node->kind << " {\n";
+        return "";
 
-      // Base fields
-      indentFunc(level + 2);
-      std::cout << "kind: \"" << node->kind << "\",\n";
-      indentFunc(level + 2);
-      std::cout << "linestart: " << node->linestart << ",\n";
-      indentFunc(level + 2);
-      std::cout << "lineend: " << node->lineend << ",\n";
-      indentFunc(level + 2);
-      std::cout << "columnstart: " << node->columnstart << ",\n";
-      indentFunc(level + 2);
-      std::cout << "columnend: " << node->columnend;
+      std::string result;
+      result += indentFunc(level) + node->kind + " {\n";
+      result += indentFunc(level + 2) + "kind: \"" + node->kind + "\",\n";
 
-      // Handle specific node types
-      if (auto exprStmt = dynamic_cast<const ast::ExpressionStatement *>(node))
+      if (auto binExpr = dynamic_cast<const ast::BinaryExpression *>(node))
       {
-        std::cout << ",\n";
-        indentFunc(level + 2);
-        std::cout << "expression:\n";
-        printStmt(exprStmt->expression, level + 4);
-      }
-      else if (auto binExpr = dynamic_cast<const ast::BinaryExpression *>(node))
-      {
-        std::cout << ",\n";
-        indentFunc(level + 2);
-        std::cout << "left:\n";
-        printStmt(binExpr->left, level + 4);
-        std::cout << ",\n";
-        indentFunc(level + 2);
-        std::cout << "op: {\n";
-        indentFunc(level + 4);
-        std::cout << "kind: \"" << lexer::tokenKindToString(binExpr->op.kind) << "\",\n";
-        indentFunc(level + 4);
-        std::cout << "value: \"" << binExpr->op.value << "\",\n";
-        indentFunc(level + 4);
-        std::cout << "linestart: " << binExpr->op.linestart << ",\n";
-        indentFunc(level + 4);
-        std::cout << "lineend: " << binExpr->op.lineend << ",\n";
-        indentFunc(level + 4);
-        std::cout << "columnstart: " << binExpr->op.columnstart << ",\n";
-        indentFunc(level + 4);
-        std::cout << "columnend: " << binExpr->op.columnend << "\n";
-        indentFunc(level + 2);
-        std::cout << "},\n";
-        indentFunc(level + 2);
-        std::cout << "right:\n";
-        printStmt(binExpr->right, level + 4);
+        result += indentFunc(level + 2) + "left:\n" + printExpr(binExpr->left, level + 4) + ",\n";
+        result += indentFunc(level + 2) + "op: {\n";
+        result += indentFunc(level + 4) + "kind: \"" + lexer::token_kind_to_string(binExpr->op.kind) + "\",\n";
+        result += indentFunc(level + 4) + "value: \"" + binExpr->op.value + "\",\n";
+        result += indentFunc(level + 4) + "linestart: " + std::to_string(binExpr->op.linestart) + ",\n";
+        result += indentFunc(level + 4) + "lineend: " + std::to_string(binExpr->op.lineend) + ",\n";
+        result += indentFunc(level + 4) + "columnstart: " + std::to_string(binExpr->op.columnstart) + ",\n";
+        result += indentFunc(level + 4) + "columnend: " + std::to_string(binExpr->op.columnend) + "\n";
+        result += indentFunc(level + 2) + "},\n";
+        result += indentFunc(level + 2) + "right:\n" + printExpr(binExpr->right, level + 4) + "\n";
       }
       else if (auto numExpr = dynamic_cast<const ast::NumberExpression *>(node))
       {
-        std::cout << ",\n";
-        indentFunc(level + 2);
-        std::cout << "value: " << numExpr->value;
+        result += indentFunc(level + 2) + "value: " + std::to_string(numExpr->value) + "\n";
       }
       else if (auto strExpr = dynamic_cast<const ast::StringExpression *>(node))
       {
-        std::cout << ",\n";
-        indentFunc(level + 2);
-        std::cout << "value: \"" << strExpr->value << "\"";
+        result += indentFunc(level + 2) + "value: \"" + strExpr->value + "\"\n";
       }
       else if (auto symExpr = dynamic_cast<const ast::SymbolExpression *>(node))
       {
-        std::cout << ",\n";
-        indentFunc(level + 2);
-        std::cout << "value: \"" << symExpr->value << "\"";
+        result += indentFunc(level + 2) + "value: \"" + symExpr->value + "\"\n";
+      }
+
+      result += indentFunc(level) + "}";
+      return result;
+    };
+
+    printStmt = [&](const ast::Statement *node, int level) -> std::string
+    {
+      if (!node)
+        return "";
+
+      std::string result;
+      result += indentFunc(level) + node->kind + " {\n";
+      result += indentFunc(level + 2) + "kind: \"" + node->kind + "\",\n";
+      result += indentFunc(level + 2) + "linestart: " + std::to_string(node->linestart) + ",\n";
+      result += indentFunc(level + 2) + "lineend: " + std::to_string(node->lineend) + ",\n";
+      result += indentFunc(level + 2) + "columnstart: " + std::to_string(node->columnstart) + ",\n";
+      result += indentFunc(level + 2) + "columnend: " + std::to_string(node->columnend);
+
+      if (auto exprStmt = dynamic_cast<const ast::ExpressionStatement *>(node))
+      {
+        result += ",\n" + indentFunc(level + 2) + "expression:\n" + printExpr(exprStmt->expression, level + 4);
       }
       else if (auto blockStmt = dynamic_cast<const ast::BlockStatement *>(node))
       {
-        std::cout << ",\n";
-        indentFunc(level + 2);
-        std::cout << "body: [\n";
+        result += ",\n" + indentFunc(level + 2) + "body: [\n";
         for (size_t i = 0; i < blockStmt->body.size(); i++)
         {
-          printStmt(blockStmt->body[i], level + 4);
+          result += printStmt(blockStmt->body[i], level + 4);
           if (i + 1 < blockStmt->body.size())
-            std::cout << ",\n";
+            result += ",\n";
         }
-        std::cout << "\n";
-        indentFunc(level + 2);
-        std::cout << "]";
+        result += "\n" + indentFunc(level + 2) + "]";
       }
 
-      std::cout << "\n";
-      indentFunc(level);
-      std::cout << "}";
+      result += "\n" + indentFunc(level) + "}";
+      return result;
     };
 
-    std::cout << "Program {\n";
-    indentFunc(indent + 2);
-    std::cout << "kind: \"Program\",\n";
-    indentFunc(indent + 2);
-    std::cout << "body: [\n";
-
+    output += "Program {\n";
+    output += indentFunc(indent + 2) + "kind: \"Program\",\n";
+    output += indentFunc(indent + 2) + "body: [\n";
     for (size_t i = 0; i < stmt->body.size(); i++)
     {
-      printStmt(stmt->body[i], indent + 4);
+      output += printStmt(stmt->body[i], indent + 4);
       if (i + 1 < stmt->body.size())
-        std::cout << ",\n";
+        output += ",\n";
       else
-        std::cout << "\n";
+        output += "\n";
     }
-
-    indentFunc(indent + 2);
-    std::cout << "]\n";
-    std::cout << "}\n"; // Ensure closing bracket for Program
+    output += indentFunc(indent + 2) + "]\n";
+    output += "}\n";
   }
   catch (const std::exception &e)
   {
-    std::cerr << "Error printing AST: " << e.what() << std::endl;
+    output += "Error printing AST: ";
+    output += e.what();
+    output += "\n";
   }
+  return output;
 }
-
-static std::string strOutput(const ast::Program *s, int indent = 0)
-{
-  std::string result;
-  auto indentFunc = [](int indent) -> std::string
-  {
-    return std::string(indent, ' ');
-  };
-
-  std::function<void(const ast::Statement *, int)> printStmt;
-  printStmt = [&](const ast::Statement *node, int level)
-  {
-    if (!node)
-      return;
-    result += indentFunc(level) + node->kind + " {\n";
-
-    result += indentFunc(level + 2) + "kind: \"" + node->kind + "\",\n";
-    result += indentFunc(level + 2) + "linestart: " + std::to_string(node->linestart) + ",\n";
-    result += indentFunc(level + 2) + "lineend: " + std::to_string(node->lineend) + ",\n";
-    result += indentFunc(level + 2) + "columnstart: " + std::to_string(node->columnstart) + ",\n";
-    result += indentFunc(level + 2) + "columnend: " + std::to_string(node->columnend);
-
-    if (auto exprStmt = dynamic_cast<const ast::ExpressionStatement *>(node))
-    {
-      result += ",\n" + indentFunc(level + 2) + "expression:\n";
-      printStmt(exprStmt->expression, level + 4);
-    }
-    else if (auto binExpr = dynamic_cast<const ast::BinaryExpression *>(node))
-    {
-      result += ",\n" + indentFunc(level + 2) + "left:\n";
-      printStmt(binExpr->left, level + 4);
-      result += ",\n" + indentFunc(level + 2) + "op: {\n";
-      result += indentFunc(level + 4) + "kind: \"" + lexer::tokenKindToString(binExpr->op.kind) + "\",\n";
-      result += indentFunc(level + 4) + "value: \"" + binExpr->op.value + "\",\n";
-      result += indentFunc(level + 4) + "linestart: " + std::to_string(binExpr->op.linestart) + ",\n";
-      result += indentFunc(level + 4) + "lineend: " + std::to_string(binExpr->op.lineend) + ",\n";
-      result += indentFunc(level + 4) + "columnstart: " + std::to_string(binExpr->op.columnstart) + ",\n";
-      result += indentFunc(level + 4) + "columnend: " + std::to_string(binExpr->op.columnend) + "\n";
-      result += indentFunc(level + 2) + "},\n";
-      result += indentFunc(level + 2) + "right:\n";
-      printStmt(binExpr->right, level + 4);
-    }
-    else if (auto numExpr = dynamic_cast<const ast::NumberExpression *>(node))
-    {
-      result += ",\n" + indentFunc(level + 2) + "value: " + std::to_string(numExpr->value);
-    }
-    else if (auto strExpr = dynamic_cast<const ast::StringExpression *>(node))
-    {
-      result += ",\n" + indentFunc(level + 2) + "value: \"" + strExpr->value + "\"";
-    }
-    else if (auto symExpr = dynamic_cast<const ast::SymbolExpression *>(node))
-    {
-      result += ",\n" + indentFunc(level + 2) + "value: \"" + symExpr->value + "\"";
-    }
-    else if (auto blockStmt = dynamic_cast<const ast::BlockStatement *>(node))
-    {
-      result += ",\n" + indentFunc(level + 2) + "body: [\n";
-      for (size_t i = 0; i < blockStmt->body.size(); i++)
-      {
-        printStmt(blockStmt->body[i], level + 4);
-        if (i + 1 < blockStmt->body.size())
-          result += ",\n";
-      }
-      result += "\n" + indentFunc(level + 2) + "]";
-    }
-
-    result += "\n" + indentFunc(level) + "}"; // Ensure closing bracket for each node
-  };
-
-  result += "Program {\n" + indentFunc(indent + 2) + "kind: \"Program\",\n" + indentFunc(indent + 2) + "body: [\n";
-
-  for (size_t i = 0; i < s->body.size(); i++)
-  {
-    printStmt(s->body[i], indent + 4);
-    if (i + 1 < s->body.size())
-      result += ",\n";
-    else
-      result += "\n";
-  }
-
-  result += indentFunc(indent + 2) + "]\n}\n"; // Ensure closing bracket for Program
-  return result;
-}
-
-// TODO: Enhance main function to handle new command-line arguments or options if needed.
-// Example:
-// int main(int argc, char **argv) {
-//   // Existing code...
-//
-//   // Handle additional arguments for extended features
-//   // e.g., debugging options, verbose output, etc.
-// }
 
 int main(int argc, char **argv)
 {
@@ -305,62 +192,44 @@ int main(int argc, char **argv)
   }
 
   std::string input((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-  std::cout << "Tokenizing...\n"; // Debug line
   auto tokens = lexer::tokenize(input);
-  std::cout << "Finished tokenizing.\n"; // Debug line
-  std::cout << "Tokens:\n";              // Debug line
-  for (const auto &token : tokens)
-  {
-    token.debug(); // Debug line
-  }
-  std::cout << "Parsing...\n"; // Debug line
-
-  parser::Parser parser(tokens);
-  auto ast = parser.parse();
-
-  std::cout << "Finished parsing.\n"; // Debug line
   if (global::errors.size() > 0)
   {
-    std::cerr << global::errors.size() << " error(s) found:\n";
-    for (auto &error : global::errors)
+    std::cout << "Errors:\n";
+    for (auto &err : global::errors)
     {
-      error.print(&global::errors[0] == &error, &global::errors.back() == &error);
+      err.print(&global::errors[0] != &err, &global::errors[global::errors.size() - 1] != &err);
     }
+  }
+  std::cout << "Tokens:\n";
+  for (const auto &token : tokens)
+  {
+    token.debug();
+  }
+  // std::cout << "Parsing...\n";
+  auto program = parser::parse(tokens);
+  // std::cout << "Finished Parsing\n";
+  if (global::errors.size() > 0)
+  {
+    std::cout << "Errors:\n";
+    for (auto &err : global::errors)
+    {
+      err.print(&global::errors[0] != &err, &global::errors[global::errors.size() - 1] != &err);
+    }
+  }
+  std::cout << "------------------------------------\n";
+  std::string output = printAST(&program);
+  std::cout << output;
+  std::ofstream outFile("output.txt");
+  if (outFile.is_open())
+  {
+    outFile << output;
+    outFile.close();
+  }
+  else
+  {
+    std::cerr << "Unable to open output file";
     return 1;
   }
-  if (ast->body.empty())
-  {
-    std::cerr << "No statements parsed.\n";
-    return 1;
-  }
-
-  // Enhanced Debugging: Verify AST Structure
-  std::cout << "[DEBUG] AST Structure Verification:\n";
-  for (size_t i = 0; i < ast->body.size(); ++i)
-  {
-    std::cout << "  Statement " << i + 1 << ": " << ast->body[i]->kind << "\n";
-  }
-
-  // TODO: Integrate new AST nodes into the AST printing and verification functions.
-  // Example:
-  // if (auto ifStmt = dynamic_cast<const ast::IfStatement*>(node)) {
-  //   // Print details specific to IfStatement
-  // }
-  // Similarly handle other new statement types.
-
-  std::cout << "AST:\n";
-  printAST(ast.get()); // Debug line
-                       /*
-                         std::ofstream outfile("output.txt");
-                         if (!outfile.is_open())
-                         {
-                           std::cerr << "Failed to open output.txt\n";
-                           return 1;
-                         }
-                         std::cout << "Writing AST to output.txt...\n"; // Debug line
-                     
-                         outfile << strOutput(&ast) << "\n";
-                         outfile.close(); */
-
   return 0;
 }

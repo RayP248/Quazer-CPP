@@ -98,9 +98,9 @@ namespace lexer {
 
   extern std::unordered_map<std::string, lexer::TokenKind> ops;
   extern std::unordered_map<std::string, lexer::TokenKind> reserved_keywords;
-  lexer::Token newToken(lexer::TokenKind kind, std::string value, int linestart, int lineend, int columnstart, int columnend);
+  lexer::Token new_token(lexer::TokenKind kind, std::string value, int linestart, int lineend, int columnstart, int columnend);
   std::vector<lexer::Token> tokenize(std::string input);
-  std::string tokenKindToString(TokenKind kind);
+  std::string token_kind_to_string(TokenKind kind);
 }
 
 #endif // LEXER_H
