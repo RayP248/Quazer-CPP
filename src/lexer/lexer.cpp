@@ -72,7 +72,7 @@ namespace lexer {
   void Token::debug() const {
     std::cout << token_kind_to_string(kind) << " (" << value << ") "
               << linestart << "-" << lineend << " : "
-              << columnstart << "-" << columnend << '\n';
+              << columnstart << "-" << columnend << '\n'; // commented out
   }
 
   std::string token_kind_to_string(TokenKind kind)

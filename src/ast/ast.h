@@ -4,13 +4,28 @@
 #include "../lexer/lexer.h"
 #include <iostream>
 #include <vector>
+#include <string>
 
 namespace ast
 {
+  enum StatementKind
+  {
+    STATEMENT,
+    PROGRAM,
+    EXPRESSION_STATEMENT,
+    BINARY_EXPRESSION,
+    NUMBER_EXPRESSION,
+    SYMBOL_EXPRESSION,
+    STRING_EXPRESSION,
+    BLOCK_STATEMENT
+  };
 
+  std::string statement_kind_to_string(StatementKind kind);
+
+  // Base Statement class with only common fields
   struct Statement
   {
-    std::string kind = "Statement"; // e.g., "Program", "Expression", etc.
+    StatementKind kind;
     int linestart = 0;
     int lineend = 0;
     int columnstart = 0;
@@ -20,14 +35,17 @@ namespace ast
 
   struct Expression : public Statement
   {
-    Expression() { kind = "Expression"; } // e.g., "BinaryExpression", "Literal", etc.
+    Expression() { kind = StatementKind::EXPRESSION_STATEMENT; }
     virtual ~Expression() = default;
   };
 
   struct Program : public Statement
   {
-    Program() { kind = "Program"; }
     std::vector<Statement *> body;
+    Program()
+    {
+      kind = StatementKind::PROGRAM;
+    }
     ~Program() override
     {
       for (auto &stmt : body)
@@ -36,6 +54,7 @@ namespace ast
       }
     }
   };
+
   //*-------------------
   //*    EXPRESSIONS
   //*-------------------
@@ -43,34 +62,44 @@ namespace ast
   // Literal Expressions
   struct NumberExpression : public Expression
   {
-    NumberExpression() { kind = "NumberExpression"; }
     double value;
+    NumberExpression(double val)
+    {
+      kind = NUMBER_EXPRESSION;
+      value = val;
+    }
   };
 
   struct StringExpression : public Expression
   {
-    StringExpression() { kind = "StringExpression"; }
     std::string value;
+    StringExpression()
+    {
+      kind = StatementKind::STRING_EXPRESSION;
+    }
   };
 
   struct SymbolExpression : public Expression
   {
-    SymbolExpression() { kind = "SymbolExpression"; }
     std::string value;
+    SymbolExpression(const std::string &val)
+    {
+      kind = SYMBOL_EXPRESSION;
+      value = val;
+    }
   };
 
   // Complex Expressions
   struct BinaryExpression : public Expression
   {
+    Expression *left = nullptr;  // Changed from Statement* to Expression*
+    Expression *right = nullptr; // Changed from Statement* to Expression*
+    lexer::Token op;
+
     BinaryExpression()
     {
-      kind = "BinaryExpression";
-      left = nullptr;
-      right = nullptr;
-    } // Initialize pointers
-    Expression *left;
-    lexer::Token op;
-    Expression *right;
+      kind = BINARY_EXPRESSION;
+    }
     ~BinaryExpression() override
     {
       delete left;
@@ -83,8 +112,11 @@ namespace ast
   //*-------------------
   struct BlockStatement : public Statement
   {
-    BlockStatement() { kind = "BlockStatement"; }
     std::vector<Statement *> body;
+    BlockStatement()
+    {
+      kind = StatementKind::BLOCK_STATEMENT;
+    }
     ~BlockStatement() override
     {
       for (auto &stmt : body)
@@ -96,8 +128,11 @@ namespace ast
 
   struct ExpressionStatement : public Statement
   {
-    ExpressionStatement() { kind = "ExpressionStatement"; }
-    Expression *expression;
+    Expression *expression = nullptr;
+    ExpressionStatement()
+    {
+      kind = EXPRESSION_STATEMENT;
+    }
     ~ExpressionStatement() override
     {
       delete expression;

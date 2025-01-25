@@ -89,7 +89,7 @@ namespace parser
   {
     // DEBUG**std::cerr << "[parse] Starting parse with " << tokens.size() << " tokens\n";
     parser_ p = create_parser_(tokens);
-    ast::Program program;
+    ast::Program *program = new ast::Program();
 
     while (p.has_tokens())
     {
@@ -99,17 +99,18 @@ namespace parser
       // std::cerr << "[parse] Parsing statement at position " << p.pos << "\n";
       auto stmt = parse_statement(p);
       if (stmt)
-        program.body.push_back(stmt);
+        program->body.push_back(stmt);
       else
         std::cerr << "[parse] Received null statement\n";
     }
 
     // DEBUG**std::cerr << "[parse] Finished creating Program node with " << program.body.size() << " statements\n";
-    program.linestart = tokens.front().linestart;
-    program.lineend = tokens.back().lineend;
-    program.columnstart = tokens.front().columnstart;
-    program.columnend = tokens.back().columnend;
-    return program;
+    program->linestart = tokens.front().linestart;
+    program->lineend = tokens.back().lineend;
+    program->columnstart = tokens.front().columnstart;
+    program->columnend = tokens.back().columnend;
+    program->kind = ast::StatementKind::PROGRAM;
+    return *program;
   }
 
   //*---------------
@@ -163,10 +164,19 @@ namespace parser
     nud(lexer::TokenKind::STRING, parse_primary_expression);
     nud(lexer::TokenKind::IDENTIFIER, parse_primary_expression);
 
+    // Parentheses
+    nud(lexer::TokenKind::OPEN_PAREN, [](parser_ &parser)
+        {
+      lexer::Token open_paren = parser.expect(lexer::TokenKind::OPEN_PAREN, "parser.cpp : parse_primary_expression : Expected '('");
+      ast::Expression *expr = parse_expression(parser, DEFAULT);
+      lexer::Token close_paren = parser.expect(lexer::TokenKind::CLOSE_PAREN, "parser.cpp : parse_primary_expression : Expected ')'");
+      return expr; });
+
     // Assign a default or primary binding power for these tokens
     binding_power_lu[lexer::TokenKind::NUMBER] = new BindingPower(PRIMARY);
     binding_power_lu[lexer::TokenKind::STRING] = new BindingPower(PRIMARY);
     binding_power_lu[lexer::TokenKind::IDENTIFIER] = new BindingPower(PRIMARY);
+    binding_power_lu[lexer::TokenKind::OPEN_PAREN] = new BindingPower(PRIMARY);
 
     // Add EOF to avoid uninitialized lookups
     // Use BindingPower::DEFAULT or the lowest power
@@ -201,6 +211,7 @@ namespace parser
     exprstmt->lineend = expression->lineend;
     exprstmt->columnstart = expression->columnstart;
     exprstmt->columnend = expression->columnend;
+    exprstmt->kind = ast::StatementKind::EXPRESSION_STATEMENT;
     return exprstmt;
   }
 
@@ -274,13 +285,14 @@ namespace parser
     {
     case lexer::TokenKind::NUMBER:
     {
-      ast::NumberExpression *literal = new ast::NumberExpression();
+      auto token = parser.current_token();
+      ast::NumberExpression *literal = new ast::NumberExpression(std::stod(token.value));
       // DEBUG**std::cout << "[parse_primary_expression] Creating NumberExpression with value: " << parser.current_token().value << "\n";
-      literal->value = std::stod(parser.current_token().value);
       literal->linestart = parser.current_token().linestart;
       literal->lineend = parser.current_token().lineend;
       literal->columnstart = parser.current_token().columnstart;
       literal->columnend = parser.current_token().columnend;
+      literal->kind = ast::StatementKind::NUMBER_EXPRESSION;
       parser.advance();
       return literal;
     }
@@ -292,17 +304,19 @@ namespace parser
       literal->lineend = parser.current_token().lineend;
       literal->columnstart = parser.current_token().columnstart;
       literal->columnend = parser.current_token().columnend;
+      literal->kind = ast::StatementKind::STRING_EXPRESSION;
       parser.advance();
       return literal;
     }
     case lexer::TokenKind::IDENTIFIER:
     {
-      ast::SymbolExpression *identifier = new ast::SymbolExpression();
-      identifier->value = parser.current_token().value;
+      auto token = parser.current_token();
+      ast::SymbolExpression *identifier = new ast::SymbolExpression(token.value);
       identifier->linestart = parser.current_token().linestart;
       identifier->lineend = parser.current_token().lineend;
       identifier->columnstart = parser.current_token().columnstart;
       identifier->columnend = parser.current_token().columnend;
+      identifier->kind = ast::StatementKind::SYMBOL_EXPRESSION;
       parser.advance();
       return identifier;
     }
@@ -337,6 +351,7 @@ namespace parser
     binary_expr->lineend = right->lineend;
     binary_expr->columnstart = left->columnstart;
     binary_expr->columnend = right->columnend;
+    binary_expr->kind = ast::StatementKind::BINARY_EXPRESSION;
 
     // DEBUG**std::cerr << "[parse_binary_expression] Returning BinaryExpression\n";
     return binary_expr;
