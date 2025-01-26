@@ -135,7 +135,7 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       result += indentFunc(level + 2) + "columnend: " + std::to_string(node->columnend) + ",";
       if (auto binExpr = dynamic_cast<const ast::BinaryExpression *>(node))
       {
-        result += indentFunc(level + 2) + "left:\n" + printExpr(dynamic_cast<const ast::Expression *>(binExpr->left), level + 4) + ",\n";
+        result += "\n" + indentFunc(level + 2) + "left:\n" + printExpr(dynamic_cast<const ast::Expression *>(binExpr->left), level + 4) + ",\n";
         result += indentFunc(level + 2) + "op: {\n";
         result += indentFunc(level + 4) + "kind: \"" + lexer::token_kind_to_string(binExpr->op.kind) + "\",\n";
         result += indentFunc(level + 4) + "value: \"" + binExpr->op.value + "\",\n";
@@ -144,7 +144,7 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
         result += indentFunc(level + 4) + "columnstart: " + std::to_string(binExpr->op.columnstart) + ",\n";
         result += indentFunc(level + 4) + "columnend: " + std::to_string(binExpr->op.columnend) + "\n";
         result += indentFunc(level + 2) + "},\n";
-        result += indentFunc(level + 2) + "right:\n" + printExpr(dynamic_cast<const ast::Expression *>(binExpr->right), level + 4) + "\n";
+        result += indentFunc(level + 2) + "right:\n" + printExpr(dynamic_cast<const ast::Expression *>(binExpr->right), level + 4);
       }
       else if (auto numExpr = dynamic_cast<const ast::NumberExpression *>(node))
       {
@@ -157,6 +157,11 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       else if (auto symExpr = dynamic_cast<const ast::SymbolExpression *>(node))
       {
         result += "\n" + indentFunc(level + 2) + "value: \"" + symExpr->value + "\"";
+      }
+      else if (auto paramExpr = dynamic_cast<const ast::ParameterExpression *>(node))
+      {
+        result += "\n" + indentFunc(level + 2) + "name: \"" + paramExpr->name + "\",\n";
+        result += indentFunc(level + 2) + "type: \n" + printType(&paramExpr->type, level + 4);
       }
 
       result += "\n" + indentFunc(level) + "}";
@@ -197,7 +202,41 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
         result += indentFunc(level + 2) + "type: \n" + printType(&var_decl_stmt->type, level + 4) + ",\n";
         result += indentFunc(level + 2) + "value: \n" + printExpr(var_decl_stmt->value, level + 4) + ",\n";
         result += indentFunc(level + 2) + "is_const: " + (var_decl_stmt->is_const ? "true" : "false") + ",\n";
-        result += indentFunc(level + 2) + "is_public: " + (var_decl_stmt->is_public ? "true" : "false") + "\n";
+        result += indentFunc(level + 2) + "is_public: " + (var_decl_stmt->is_public ? "true" : "false");
+      }
+      else if (auto fn_decl_stmt = dynamic_cast<const ast::FunctionDeclarationStatement *>(node))
+      {
+        result += ",\n" + indentFunc(level + 2) + "name: \"" + fn_decl_stmt->name + "\",\n";
+        result += indentFunc(level + 2) + "parameters: [\n";
+        for (size_t i = 0; i < fn_decl_stmt->parameters.size(); i++)
+        {
+          result += printExpr(fn_decl_stmt->parameters[i], level + 4);
+          if (i + 1 < fn_decl_stmt->parameters.size())
+            result += ",\n";
+        }
+        result += "\n" + indentFunc(level + 2) + "],\n";
+        result += indentFunc(level + 2) + "body: \n" + printStmt(fn_decl_stmt->body, level + 4) + ",\n";
+        result += indentFunc(level + 2) + "return_type: \n" + printType(&fn_decl_stmt->return_type, level + 4);
+        if (fn_decl_stmt->return_statement != nullptr)
+        {
+          result += "\n" + indentFunc(level + 2) + "return_statement: \n" + printStmt(fn_decl_stmt->return_statement, level + 4);
+        }
+        else
+        {
+          result += "\n" + indentFunc(level + 2) + "return_statement: nullptr";
+        }
+      }
+      else if (auto return_stmt = dynamic_cast<const ast::ReturnStatement *>(node))
+      {
+        result += ",\n" + indentFunc(level + 2) + "value:\n";
+        if (return_stmt->value)
+        {
+          result += printExpr(return_stmt->value, level + 4);
+        }
+        else
+        {
+          result += indentFunc(level + 4) + "null";
+        }
       }
 
       result += "\n" + indentFunc(level) + "}";

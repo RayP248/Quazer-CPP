@@ -16,11 +16,14 @@ namespace ast
     EXPRESSION_STATEMENT,
     BLOCK_STATEMENT,
     VARIABLE_DECLARATION_STATEMENT,
-    BINARY_EXPRESSION,
+    RETURN_STATEMENT,
+    FUNCTION_DECLARATION_STATEMENT,
     NUMBER_EXPRESSION,
     SYMBOL_EXPRESSION,
     STRING_EXPRESSION,
-    DUMMY_EXPRESSION
+    BINARY_EXPRESSION,
+    CALL_EXPRESSION,
+    DUMMY_EXPRESSION,
   };
 
   std::string statement_kind_to_string(StatementKind kind);
@@ -132,12 +135,44 @@ namespace ast
     }
   };
 
+  struct CallExpression : public Expression
+  {
+    std::variant<SymbolExpression /*, MemberExpression **/> *function = nullptr;
+    std::vector<Expression *> args;
+    CallExpression()
+    {
+      kind = StatementKind::CALL_EXPRESSION;
+    }
+    ~CallExpression() override
+    {
+      delete function;
+      for (auto &arg : args)
+      {
+        delete arg;
+      }
+    }
+  };
+
   //*-------------------
   //*    STATEMENTS
   //*-------------------
+  struct ReturnStatement : public Statement
+  {
+    Expression *value = nullptr;
+    ReturnStatement()
+    {
+      kind = RETURN_STATEMENT;
+    }
+    ~ReturnStatement() override
+    {
+      delete value;
+    }
+  };
+
   struct BlockStatement : public Statement
   {
     std::vector<Statement *> body;
+    ReturnStatement *return_statement = nullptr;
     BlockStatement()
     {
       kind = StatementKind::BLOCK_STATEMENT;
@@ -179,6 +214,34 @@ namespace ast
     ~VariableDeclarationStatement() override
     {
       delete value;
+    }
+  };
+
+  struct ParameterExpression : public Expression
+  {
+    std::string name;
+    Type type;
+  };
+
+  struct FunctionDeclarationStatement : public Statement
+  {
+    std::string name;
+    std::vector<ParameterExpression *> parameters;
+    BlockStatement *body;
+    ReturnStatement *return_statement;
+    Type return_type;
+    FunctionDeclarationStatement()
+    {
+      kind = StatementKind::FUNCTION_DECLARATION_STATEMENT;
+    }
+    ~FunctionDeclarationStatement() override
+    {
+      delete body;
+      delete return_statement;
+      for (auto &param : parameters)
+      {
+        delete param;
+      }
     }
   };
 

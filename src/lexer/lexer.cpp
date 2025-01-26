@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdexcept>
 #include <unordered_map>
+#include <iostream> // Add for debugging
 
 namespace lexer {
   std::unordered_map<std::string, lexer::TokenKind> ops = {
@@ -353,6 +354,8 @@ namespace lexer {
   }
 
   std::vector<lexer::Token> tokenize(std::string input) {
+    // DEBUG**std::cout << "[Debug] Starting tokenization\n"; // Debug
+
     // Strip UTF-8 BOM if present
     if (input.size() >= 3 &&
         (unsigned char)input[0] == 0xEF &&
@@ -398,6 +401,7 @@ namespace lexer {
 
     auto handle_operator = [&](const std::string &op)
     {
+      // Create token BEFORE advancing position
       tokens.push_back(new_token(ops[op], op, line, line, col, col + op.size()));
       col += op.size();
       it += op.size();
@@ -406,6 +410,7 @@ namespace lexer {
     while (it != end) {
       // Skip comment lines starting with `--`
       if (std::distance(it, end) > 1 && *it == '-' && *(it + 1) == '-') {
+        // DEBUG**std::cout << "[Debug] Skipping comment line\n"; // Debug
         // Skip until newline or end
         while (it != end && *it != '\n') {
           ++it;
@@ -428,7 +433,21 @@ namespace lexer {
           break;
         default:
         {
-          if (std::isdigit(*it)) {
+          // Check if it's an operator BEFORE checking for identifiers/numbers
+          if ((it + 1 != end && ops.find(std::string(1, *it) + *(it + 1)) != ops.end()))
+          {
+            // Two character operator
+            std::string op = std::string(1, *it) + *(it + 1);
+            handle_operator(op);
+          }
+          else if (ops.find(std::string(1, *it)) != ops.end())
+          {
+            // Single character operator
+            std::string op = std::string(1, *it);
+            handle_operator(op);
+          }
+          else if (std::isdigit(*it))
+          {
             std::string num;
             while (it != end && (std::isdigit(*it) || *it == '.' || *it == '_')) {
               // Break numeric parse if next char(s) form an operator like ".."
@@ -439,7 +458,10 @@ namespace lexer {
               ++it; col++;
             }
             tokens.push_back(new_token(lexer::TokenKind::NUMBER, std::move(num), line, line, col - num.size(), col));
-          } else if (std::isalpha(*it)) {
+            // DEBUG**std::cout << "[Debug] Token created: NUMBER(" << num << ")\n"; // Debug
+          }
+          else if (std::isalpha(*it))
+          {
             std::string value;
             while (it != end && (std::isalpha(*it) || std::isdigit(*it) || *it == '_')) {
               value.push_back(*it);
@@ -449,33 +471,25 @@ namespace lexer {
             // For case-insensitive matching of reserved keywords
             std::string lower;
             lower.reserve(value.size());
-            for (char c : value) {
-              lower.push_back(std::tolower(static_cast<unsigned char>(c)));
+            for (char c : value)
+            {
+              lower += std::tolower(c);
             }
             if (reserved_keywords.find(lower) != reserved_keywords.end()) {
               tokens.push_back(new_token(reserved_keywords[lower],
                                          std::move(value), line, line, col - value.size(), col));
+              // DEBUG**std::cout << "[Debug] Token created: " << token_kind_to_string(reserved_keywords[lower]) << "(" << value << ")\n"; // Debug
             }
             else
             {
               tokens.push_back(new_token(lexer::TokenKind::IDENTIFIER,
                                          std::move(value), line, line, col - value.size(), col));
-            }
-          }
-          else if (
-              (it + 1 != end && ops.find(std::string(1, *it) + *(it + 1)) != ops.end()) || ops.find(std::string(1, *it)) != ops.end())
-          {
-            if (ops.find(std::string(1, *it) + *(it + 1)) != ops.end())
-            {
-              handle_operator(std::string(1, *it) + *(it + 1));
-            }
-            else
-            {
-              handle_operator(std::string(1, *it));
+              // DEBUG**std::cout << "[Debug] Token created: IDENTIFIER(" << value << ")\n"; // Debug
             }
           }
           else
           {
+            std::cerr << "[Error] Unknown token: '" << *it << "'\n"; // Debug
             error::Error(error::ErrorCode::LEXER_ERROR, "Unknown token: '" + std::string(1, *it) + "'",
                          line, -1, col, -1,
                          "lexer.cpp : switch statement : default case : else",
@@ -488,6 +502,7 @@ namespace lexer {
       }
     }
     tokens.push_back(new_token(lexer::TokenKind::EOF_, "", line, line, col, col));
+    // DEBUG**std::cout << "[Debug] Tokenization completed. Total tokens: " << tokens.size() << "\n"; // Debug
     return tokens;
   }
 }

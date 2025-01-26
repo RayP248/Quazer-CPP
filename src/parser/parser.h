@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "../lexer/lexer.h"
 #include "../ast/ast.h"
+#include <iostream> // Add for debugging
 
 namespace parser
 {
@@ -94,16 +95,24 @@ namespace parser
   //*------------------
   ast::Statement *parse_statement(parser::parser_ &parser);
   ast::Statement *parse_variable_declaration_statement(parser_ &parser);
+  ast::Statement *parse_function_declaration_statement(parser_ &parser);
+  ast::Statement *parse_block_statement(parser_ &parser);
+  ast::Statement *parse_return_statement(parser_ &parser);
 
   //*-------------------
   //*    EXPRESSIONS
   //*-------------------
   ast::Expression *parse_expression(parser::parser_ &parser, BindingPower binding_power);
   ast::Expression *parse_primary_expression(parser::parser_ &parser);
-  std::unordered_map<std::string, ast::Expression *> parse_properties(parser::parser_ &parser, lexer::Token &closecurly);
   ast::Expression *parse_binary_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
+  ast::Expression *parse_call_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
 
+  //*---------------
+  //*    HELPERS
+  //*---------------
   std::vector<ast::Expression *> parse_args(parser_ &parser);
+  std::vector<ast::ParameterExpression *> parse_parameters(parser_ &parser);
+  std::unordered_map<std::string, ast::Expression *> parse_properties(parser::parser_ &parser, lexer::Token &closecurly);
 }
 
 #endif // PARSER_H

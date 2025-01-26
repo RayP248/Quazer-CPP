@@ -14,7 +14,7 @@ namespace interpreter
   //*-------------------
   //*    INTERPRETER
   //*-------------------
-  std::unique_ptr<runtime_value> interpret(ast::ASTVariant *statement, interpreter::Environment *env)
+  std::unique_ptr<runtime_value> interpret(ast::ASTVariant *statement, interpreter::Environment *env, bool is_returned = false)
   {
     // std::cout << "[interpret] Starting interpretation\n";
 
@@ -43,16 +43,21 @@ namespace interpreter
       auto program_node = dynamic_cast<ast::Program *>(node);
       return interpret_program(program_node, env);
     }
+    case ast::StatementKind::BLOCK_STATEMENT:
+    {
+      auto block_node = dynamic_cast<ast::BlockStatement *>(node);
+      return interpret_block_statement(block_node, env, is_returned);
+    }
     case ast::StatementKind::EXPRESSION_STATEMENT:
     {
       auto expr_node = dynamic_cast<ast::ExpressionStatement *>(node);
-      return interpret_expression_statement(expr_node, env);
+      return interpret_expression_statement(expr_node, env, is_returned);
     }
     case ast::StatementKind::NUMBER_EXPRESSION:
     {
       auto num_node = dynamic_cast<ast::NumberExpression *>(node);
       // std::cout << "[interpret] Interpreting number: " << num_node->value << "\n";
-      return std::make_unique<number_value>(num_node->value);
+      return std::make_unique<number_value>(num_node->value, is_returned);
     }
     case ast::StatementKind::SYMBOL_EXPRESSION:
     {
@@ -69,22 +74,29 @@ namespace interpreter
     {
       auto str_node = dynamic_cast<ast::StringExpression *>(node);
       // std::cout << "[interpret] Interpreting string: " << str_node->value << "\n";
-      return std::make_unique<string_value>(str_node->value);
+      return std::make_unique<string_value>(str_node->value, is_returned);
     }
     case ast::StatementKind::BINARY_EXPRESSION:
     {
       auto bin_node = dynamic_cast<ast::BinaryExpression *>(node);
       // std::cout << "[interpret] Interpreting binary expression with operator: " << bin_node->op.value << "\n";
-      return interpret_binary_expression(bin_node, env);
+      return interpret_binary_expression(bin_node, env, is_returned);
     }
     case ast::StatementKind::VARIABLE_DECLARATION_STATEMENT:
     {
       auto var_decl_node = dynamic_cast<ast::VariableDeclarationStatement *>(node);
-      return interpret_variable_declaration_statement(var_decl_node, env);
+      return interpret_variable_declaration_statement(var_decl_node, env, is_returned);
     }
+    case ast::StatementKind::RETURN_STATEMENT:
+    {
+      auto return_node = dynamic_cast<ast::ReturnStatement *>(node);
+      // std::cout << "[interpret] Interpreting return statement\n";
+      return interpret_return_statement(return_node, env);
+    }
+    // TODO: Add parse_function_declaration_statement
     default:
       // std::cout << "[interpret] Unhandled statement kind: " << ast::statement_kind_to_string(std::get<ast::Statement *>(*statement)->kind) << "\n";
-      return std::make_unique<null_value>();
+      return std::make_unique<null_value>(is_returned);
     }
   }
 
@@ -183,9 +195,9 @@ namespace interpreter
   Environment *create_global_environment()
   {
     Environment *global_env = new Environment();
-    global_env->declare_variable("null", std::make_unique<null_value>(), new ast::Type("nulltype"), nullptr, true, false);
-    global_env->declare_variable("true", std::make_unique<boolean_value>(true), new ast::Type("bool"), nullptr, true, false);
-    global_env->declare_variable("false", std::make_unique<boolean_value>(false), new ast::Type("bool"), nullptr, true, false);
+    global_env->declare_variable("null", std::make_unique<null_value>(false), new ast::Type("nulltype"), nullptr, true, false);
+    global_env->declare_variable("true", std::make_unique<boolean_value>(true, false), new ast::Type("bool"), nullptr, true, false);
+    global_env->declare_variable("false", std::make_unique<boolean_value>(false, false), new ast::Type("bool"), nullptr, true, false);
     return global_env;
   }
 
@@ -195,26 +207,81 @@ namespace interpreter
   std::unique_ptr<runtime_value> interpret_program(ast::Program *program, Environment *env)
   {
     // std::cout << "[interpret_program] Starting with " << program->body.size() << " statements\n";
-    std::unique_ptr<runtime_value> result = std::make_unique<null_value>();
+    std::unique_ptr<runtime_value> result = std::make_unique<null_value>(false);
 
     for (const auto &stmt : program->body)
     {
       // std::cout << "[interpret_program] Interpreting statement of kind: " << ast::statement_kind_to_string(stmt->kind) << "\n";
       ast::ASTVariant variant = stmt;
-      result = interpret(&variant, env);
+      result = interpret(&variant, env, false);
     }
 
     return result;
   }
 
-  std::unique_ptr<runtime_value> interpret_expression_statement(ast::ExpressionStatement *statement, interpreter::Environment *env)
+  std::unique_ptr<runtime_value> interpret_block_statement(ast::BlockStatement *program, Environment *env, bool is_returned)
+  {
+    // std::cout << "[interpret_program] Starting with " << program->body.size() << " statements\n";
+    std::unique_ptr<runtime_value> result = std::make_unique<null_value>(is_returned);
+
+    for (const auto &stmt : program->body)
+    {
+      // std::cout << "[interpret_program] Interpreting statement of kind: " << ast::statement_kind_to_string(stmt->kind) << "\n";
+      ast::ASTVariant variant = stmt;
+      if (stmt->kind == ast::StatementKind::RETURN_STATEMENT)
+      {
+        result = interpret(&variant, env, is_returned);
+        break;
+      }
+      else
+      {
+        result = interpret(&variant, env, false);
+      }
+    }
+
+    return result;
+  }
+
+  std::unique_ptr<runtime_value> interpret_expression_statement(ast::ExpressionStatement *statement, interpreter::Environment *env, bool is_returned)
   {
     auto exprStmt = dynamic_cast<ast::ExpressionStatement *>(statement);
     ast::ASTVariant variant = exprStmt->expression;
-    return interpret(&variant, env);
+    return interpret(&variant, env, is_returned);
   }
 
-  std::unique_ptr<runtime_value> interpret_binary_expression(ast::BinaryExpression *expression, interpreter::Environment *env)
+  std::unique_ptr<runtime_value> interpret_variable_declaration_statement(ast::VariableDeclarationStatement *statement, interpreter::Environment *env, bool is_returned)
+  {
+    auto var_decl = dynamic_cast<ast::VariableDeclarationStatement *>(statement);
+    std::unique_ptr<runtime_value> value = nullptr;
+
+    if (var_decl->value)
+    {
+      ast::ASTVariant variant = var_decl->value;
+      value = interpret(&variant, env, is_returned);
+    }
+    std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), &var_decl->type, var_decl, var_decl->is_const, var_decl->is_public);
+    return finalval;
+  }
+
+  std::unique_ptr<runtime_value> interpret_return_statement(ast::ReturnStatement *statement, interpreter::Environment *env)
+  {
+    auto return_stmt = dynamic_cast<ast::ReturnStatement *>(statement);
+    std::unique_ptr<runtime_value> value = nullptr;
+
+    if (return_stmt->value)
+    {
+      ast::ASTVariant variant = return_stmt->value;
+      value = interpret(&variant, env, true);
+    }
+
+    return value;
+  }
+
+  // TODO: Implement parse_function_declaration_statement
+  //*-------------------
+  //*    EXPRESSIONS
+  //*-------------------
+  std::unique_ptr<runtime_value> interpret_binary_expression(ast::BinaryExpression *expression, interpreter::Environment *env, bool is_returned)
   {
     auto bin = dynamic_cast<ast::BinaryExpression *>(expression);
     if (!bin || !bin->left || !bin->right)
@@ -238,15 +305,15 @@ namespace interpreter
       {
         if (bin->op.value == "+")
         {
-          return std::make_unique<number_value>(lnum->value + rnum->value);
+          return std::make_unique<number_value>(lnum->value + rnum->value, is_returned);
         }
         else if (bin->op.value == "*")
         {
-          return std::make_unique<number_value>(lnum->value * rnum->value);
+          return std::make_unique<number_value>(lnum->value * rnum->value, is_returned);
         }
         else if (bin->op.value == "-")
         {
-          return std::make_unique<number_value>(lnum->value - rnum->value);
+          return std::make_unique<number_value>(lnum->value - rnum->value, is_returned);
         }
         else if (bin->op.value == "/")
         {
@@ -254,43 +321,43 @@ namespace interpreter
           {
             error::Error err(error::ErrorCode::RUNTIME_ERROR, "Division by zero.", bin->linestart, bin->lineend, bin->columnstart, bin->columnend, "interpreter.cpp : interpret_binary_expression : if", error::ErrorImportance::MODERATE);
           }
-          return std::make_unique<number_value>(lnum->value / rnum->value);
+          return std::make_unique<number_value>(lnum->value / rnum->value, is_returned);
         }
         else if (bin->op.value == "%")
         {
-          return std::make_unique<number_value>(std::fmod(lnum->value, rnum->value));
+          return std::make_unique<number_value>(std::fmod(lnum->value, rnum->value), is_returned);
         }
         else if (bin->op.value == "==")
         {
-          return std::make_unique<boolean_value>(lnum->value == rnum->value);
+          return std::make_unique<boolean_value>(lnum->value == rnum->value, is_returned);
         }
         else if (bin->op.value == "!=")
         {
-          return std::make_unique<boolean_value>(lnum->value != rnum->value);
+          return std::make_unique<boolean_value>(lnum->value != rnum->value, is_returned);
         }
         else if (bin->op.value == ">")
         {
-          return std::make_unique<boolean_value>(lnum->value > rnum->value);
+          return std::make_unique<boolean_value>(lnum->value > rnum->value, is_returned);
         }
         else if (bin->op.value == ">=")
         {
-          return std::make_unique<boolean_value>(lnum->value >= rnum->value);
+          return std::make_unique<boolean_value>(lnum->value >= rnum->value, is_returned);
         }
         else if (bin->op.value == "<")
         {
-          return std::make_unique<boolean_value>(lnum->value < rnum->value);
+          return std::make_unique<boolean_value>(lnum->value < rnum->value, is_returned);
         }
         else if (bin->op.value == "<=")
         {
-          return std::make_unique<boolean_value>(lnum->value <= rnum->value);
+          return std::make_unique<boolean_value>(lnum->value <= rnum->value, is_returned);
         }
         else if (bin->op.value == "&&")
         {
-          return std::make_unique<boolean_value>(lnum->value && rnum->value);
+          return std::make_unique<boolean_value>(lnum->value && rnum->value, is_returned);
         }
         else if (bin->op.value == "||")
         {
-          return std::make_unique<boolean_value>(lnum->value || rnum->value);
+          return std::make_unique<boolean_value>(lnum->value || rnum->value, is_returned);
         }
         else
         {
@@ -299,22 +366,12 @@ namespace interpreter
       }
     }
 
-    return std::make_unique<null_value>();
+    return std::make_unique<null_value>(is_returned);
   }
 
-  std::unique_ptr<runtime_value> interpret_variable_declaration_statement(ast::VariableDeclarationStatement *statement, interpreter::Environment *env)
-  {
-    auto var_decl = dynamic_cast<ast::VariableDeclarationStatement *>(statement);
-    std::unique_ptr<runtime_value> value = nullptr;
-
-    if (var_decl->value)
-    {
-      ast::ASTVariant variant = var_decl->value;
-      value = interpret(&variant, env);
-    }
-    std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), &var_decl->type, var_decl, var_decl->is_const, var_decl->is_public);
-    return finalval;
-  }
+  //*---------------
+  //*    HELPERS
+  //*---------------
   std::string print_value(const interpreter::runtime_value &value)
   {
     // filepath: /y:/Lexar/C++Projects/Quazer/src/main.cpp

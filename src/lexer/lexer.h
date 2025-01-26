@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iostream> // Add for debugging
 
 namespace lexer {
   enum class TokenKind

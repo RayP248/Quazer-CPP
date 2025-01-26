@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <variant>
 #include <memory>
+#include <iostream> // Add for debugging
 #include "../ast/ast.h"
 
 namespace interpreter
@@ -16,6 +17,7 @@ namespace interpreter
   struct runtime_value
   {
     std::string type;
+    bool returned_value = false;
     virtual ~runtime_value() = default;
     virtual std::string to_string() const
     {
@@ -27,19 +29,22 @@ namespace interpreter
   struct null_value : runtime_value
   {
     void *value;
-    null_value()
+    null_value(bool is_returned = false)
     {
       value = nullptr;
       type = "null";
+      returned_value = is_returned;
+      // DEBUG**std::cout << "[Debug] Created null_value\n"; // Debug
     }
     std::string to_string() const override
     {
       return "null";
     }
-    null_value(const null_value &other)
+    null_value(const null_value &other, bool is_returned = false)
     {
       value = other.value;
       type = other.type;
+      returned_value = is_returned;
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -52,6 +57,7 @@ namespace interpreter
     dummy_value()
     {
       type = "dummy";
+      // DEBUG**std::cout << "[Debug] Created dummy_value\n"; // Debug
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -62,19 +68,22 @@ namespace interpreter
   struct number_value : runtime_value
   {
     double value;
-    number_value(double val)
+    number_value(double val, bool is_returned = false)
     {
       type = "number"; // Make sure type is set
       value = val;
+      returned_value = is_returned;
+      // DEBUG**std::cout << "[Debug] Created number_value: " << value << "\n"; // Debug
     }
     std::string to_string() const override
     {
       return std::to_string(value);
     }
-    number_value(const number_value &other)
+    number_value(const number_value &other, bool is_returned = false)
     {
       value = other.value;
       type = other.type;
+      returned_value = is_returned;
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -85,19 +94,22 @@ namespace interpreter
   struct string_value : runtime_value
   {
     std::string value;
-    string_value(std::string val)
+    string_value(std::string val, bool is_returned = false)
     {
       value = std::move(val);
       type = "string";
+      returned_value = is_returned;
+      // DEBUG**std::cout << "[Debug] Created string_value: " << value << "\n"; // Debug
     }
     std::string to_string() const override
     {
       return value;
     }
-    string_value(const string_value &other)
+    string_value(const string_value &other, bool is_returned = false)
     {
       value = other.value;
       type = other.type;
+      returned_value = is_returned;
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -108,19 +120,22 @@ namespace interpreter
   struct boolean_value : runtime_value
   {
     bool value;
-    boolean_value(bool val)
+    boolean_value(bool val, bool is_returned = false)
     {
       value = val;
       type = "boolean";
+      returned_value = is_returned;
+      // DEBUG**std::cout << "[Debug] Created boolean_value: " << (value ? "true" : "false") << "\n"; // Debug
     }
     std::string to_string() const override
     {
       return value ? "true" : "false";
     }
-    boolean_value(const boolean_value &other)
+    boolean_value(const boolean_value &other, bool is_returned = false)
     {
       value = other.value;
       type = other.type;
+      returned_value = is_returned;
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -154,8 +169,9 @@ namespace interpreter
   //*------------------
   //*    STATEMENTS
   //*------------------
-  std::unique_ptr<runtime_value> interpret(ast::ASTVariant *statement, interpreter::Environment *env);
+  std::unique_ptr<runtime_value> interpret(ast::ASTVariant *statement, interpreter::Environment *env, bool is_returned = false);
   std::unique_ptr<runtime_value> interpret_program(ast::Program *program, Environment *env);
+  std::unique_ptr<runtime_value> interpret_block_statement(ast::BlockStatement *program, Environment *env, bool is_returned);
   std::unique_ptr<runtime_value> interpret_expression_statement(ast::ExpressionStatement *statement, interpreter::Environment *env);
   std::unique_ptr<runtime_value> interpret_variable_declaration_statement(ast::VariableDeclarationStatement *statement, interpreter::Environment *env);
 

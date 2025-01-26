@@ -1,5 +1,8 @@
 const foo : number = 10;
 
-public const bar : number = foo * 2;
+fn add(x: number, y: number) -> number {
+  const z : number = x + y;
+  return z;
+}
 
-bar;
+-- print(add(1, 2));
