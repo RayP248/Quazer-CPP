@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <variant>
 
 namespace ast
 {
@@ -13,11 +14,13 @@ namespace ast
     STATEMENT,
     PROGRAM,
     EXPRESSION_STATEMENT,
+    BLOCK_STATEMENT,
+    VARIABLE_DECLARATION_STATEMENT,
     BINARY_EXPRESSION,
     NUMBER_EXPRESSION,
     SYMBOL_EXPRESSION,
     STRING_EXPRESSION,
-    BLOCK_STATEMENT
+    DUMMY_EXPRESSION
   };
 
   std::string statement_kind_to_string(StatementKind kind);
@@ -55,6 +58,20 @@ namespace ast
     }
   };
 
+  //*-------------
+  //*    TYPES
+  //*-------------
+  struct Type
+  {
+    std::string name;
+    std::vector<Type> generics;
+    std::vector<Type> fields;
+    bool is_inferred = false;
+    Type() : is_inferred(true) {}
+    Type(const std::string &name) : name(name), is_inferred(false) {}
+    Type(const std::string &name, const std::vector<Type> &generics) : name(name), generics(generics), is_inferred(false) {}
+  };
+
   //*-------------------
   //*    EXPRESSIONS
   //*-------------------
@@ -86,6 +103,14 @@ namespace ast
     {
       kind = SYMBOL_EXPRESSION;
       value = val;
+    }
+  };
+
+  struct DummyExpression : public Expression
+  {
+    DummyExpression()
+    {
+      kind = DUMMY_EXPRESSION;
     }
   };
 
@@ -139,6 +164,37 @@ namespace ast
     }
   };
 
+  struct VariableDeclarationStatement : public Statement
+  {
+    std::string name;
+    Expression *value = nullptr;
+    Type type;
+    bool is_const = false;
+    bool is_public = false;
+
+    VariableDeclarationStatement()
+    {
+      kind = VARIABLE_DECLARATION_STATEMENT;
+    }
+    ~VariableDeclarationStatement() override
+    {
+      delete value;
+    }
+  };
+
+  //*------------
+  //*    MISC
+  //*------------
+  typedef std::variant<
+      ast::Program *,
+      ast::ExpressionStatement *,
+      ast::BinaryExpression *,
+      ast::NumberExpression *,
+      ast::StringExpression *,
+      ast::SymbolExpression *,
+      ast::Statement *, // Fallback
+      ast::Expression *>
+      ASTVariant; // Fallback
   // TODO: Define new AST node structures for additional language constructs.
   // Example:
   /*

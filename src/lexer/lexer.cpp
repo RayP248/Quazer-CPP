@@ -49,30 +49,31 @@ namespace lexer {
   };
 
   std::unordered_map<std::string, lexer::TokenKind> reserved_keywords = {
-    {"package", lexer::TokenKind::PACKAGE},
-    {"const", lexer::TokenKind::CONST},
-    {"let", lexer::TokenKind::LET},
-    {"struct", lexer::TokenKind::STRUCT},
-    {"fn", lexer::TokenKind::FN},
-    {"return", lexer::TokenKind::RETURN},
-    {"if", lexer::TokenKind::IF},
-    {"else", lexer::TokenKind::ELSE},
-    {"for", lexer::TokenKind::FOR},
-    {"then", lexer::TokenKind::THEN},
-    {"class", lexer::TokenKind::CLASS},
-    {"constructor", lexer::TokenKind::CONSTRUCTOR},
-    {"operator", lexer::TokenKind::OPERATOR},
-    {"create", lexer::TokenKind::CREATE},
-    {"for", lexer::TokenKind::FOR},
-    {"extend", lexer::TokenKind::EXTEND},
-    {"prop", lexer::TokenKind::PROP},
-    {"end", lexer::TokenKind::END},
+      {"package", lexer::TokenKind::PACKAGE},
+      {"const", lexer::TokenKind::CONST},
+      {"let", lexer::TokenKind::LET},
+      {"public", lexer::TokenKind::PUBLIC},
+      {"struct", lexer::TokenKind::STRUCT},
+      {"fn", lexer::TokenKind::FN},
+      {"return", lexer::TokenKind::RETURN},
+      {"if", lexer::TokenKind::IF},
+      {"else", lexer::TokenKind::ELSE},
+      {"for", lexer::TokenKind::FOR},
+      {"then", lexer::TokenKind::THEN},
+      {"class", lexer::TokenKind::CLASS},
+      {"constructor", lexer::TokenKind::CONSTRUCTOR},
+      {"operator", lexer::TokenKind::OPERATOR},
+      {"create", lexer::TokenKind::CREATE},
+      {"for", lexer::TokenKind::FOR},
+      {"extend", lexer::TokenKind::EXTEND},
+      {"prop", lexer::TokenKind::PROP},
+      {"end", lexer::TokenKind::END},
   };
 
   void Token::debug() const {
     std::cout << token_kind_to_string(kind) << " (" << value << ") "
               << linestart << "-" << lineend << " : "
-              << columnstart << "-" << columnend << '\n'; // commented out
+              << columnstart << "-" << columnend << '\n';
   }
 
   std::string token_kind_to_string(TokenKind kind)
@@ -166,6 +167,8 @@ namespace lexer {
       return "CONST";
     case TokenKind::LET:
       return "LET";
+    case TokenKind::PUBLIC:
+      return "PUBLIC";
     case TokenKind::STRUCT:
       return "STRUCT";
     case TokenKind::FN:
@@ -194,6 +197,137 @@ namespace lexer {
       return "PROP";
     case TokenKind::END:
       return "END";
+    case TokenKind::REGEXP:
+      return "REGEXP";
+    case TokenKind::EOF_:
+      return "EOF";
+    default:
+      return "UNKNOWN";
+    }
+  }
+
+  std::string token_kind_to_symbol(TokenKind kind)
+  {
+    switch (kind)
+    {
+    case TokenKind::NUMBER:
+      return "NUMBER";
+    case TokenKind::IDENTIFIER:
+      return "IDENTIFIER";
+    case TokenKind::STRING:
+      return "STRING";
+    case TokenKind::PLUS:
+      return "+";
+    case TokenKind::MINUS:
+      return "-";
+    case TokenKind::STAR:
+      return "*";
+    case TokenKind::SLASH:
+      return "/";
+    case TokenKind::PERCENT:
+      return "%";
+    case TokenKind::TYPE_ARROW:
+      return "->";
+    case TokenKind::LAMBDA_ARROW:
+      return ":>";
+    case TokenKind::DOT:
+      return ".";
+    case TokenKind::DOT_DOT:
+      return "..";
+    case TokenKind::EQUAL:
+      return "==";
+    case TokenKind::NOT:
+      return "!";
+    case TokenKind::NOT_EQUAL:
+      return "!=";
+    case TokenKind::GREATER:
+      return ">";
+    case TokenKind::GREATER_EQUAL:
+      return ">=";
+    case TokenKind::LESS:
+      return "<";
+    case TokenKind::LESS_EQUAL:
+      return "<=";
+    case TokenKind::AND:
+      return "&&";
+    case TokenKind::OR:
+      return "||";
+    case TokenKind::ASSIGNMENT:
+      return "=";
+    case TokenKind::PLUS_ASSIGNMENT:
+      return "+=";
+    case TokenKind::MINUS_ASSIGNMENT:
+      return "-=";
+    case TokenKind::STAR_ASSIGNMENT:
+      return "*=";
+    case TokenKind::SLASH_ASSIGNMENT:
+      return "/=";
+    case TokenKind::PERCENT_ASSIGNMENT:
+      return "%=";
+    case TokenKind::OPEN_BRACE:
+      return "[";
+    case TokenKind::CLOSE_BRACE:
+      return "]";
+    case TokenKind::OPEN_CURLY:
+      return "{";
+    case TokenKind::CLOSE_CURLY:
+      return "}";
+    case TokenKind::OPEN_PAREN:
+      return "(";
+    case TokenKind::CLOSE_PAREN:
+      return ")";
+    case TokenKind::COLON:
+      return ":";
+    case TokenKind::SEMICOLON:
+      return ";";
+    case TokenKind::COMMA:
+      return ",";
+    case TokenKind::SINGLE_QUOTE:
+      return "'";
+    case TokenKind::DOUBLE_QUOTE:
+      return "\"";
+    case TokenKind::DASH_DASH:
+      return "--";
+    case TokenKind::BACK_SLASH:
+      return "\\";
+    case TokenKind::BACK_TICK:
+      return "`";
+    case TokenKind::PACKAGE:
+      return "package";
+    case TokenKind::CONST:
+      return "const";
+    case TokenKind::LET:
+      return "let";
+    case TokenKind::PUBLIC:
+      return "public";
+    case TokenKind::STRUCT:
+      return "struct";
+    case TokenKind::FN:
+      return "fn";
+    case TokenKind::RETURN:
+      return "return";
+    case TokenKind::IF:
+      return "if";
+    case TokenKind::ELSE:
+      return "else";
+    case TokenKind::FOR:
+      return "for";
+    case TokenKind::THEN:
+      return "then";
+    case TokenKind::CLASS:
+      return "class";
+    case TokenKind::CONSTRUCTOR:
+      return "constructor";
+    case TokenKind::OPERATOR:
+      return "operator";
+    case TokenKind::CREATE:
+      return "create";
+    case TokenKind::EXTEND:
+      return "extend";
+    case TokenKind::PROP:
+      return "prop";
+    case TokenKind::END:
+      return "end";
     case TokenKind::REGEXP:
       return "REGEXP";
     case TokenKind::EOF_:

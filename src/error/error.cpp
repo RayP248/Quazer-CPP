@@ -14,7 +14,7 @@ void setColor(int textColor)
 
 void setColorRGB(int r, int g, int b)
 {
-  std::cout << "\033[38;2;" << r << ";" << r << ";" << b << "m";
+  std::cout << "\033[38;2;" << r << ";" << g << ";" << b << "m";
 }
 
 void resetColor() { std::cout << "\033[0m"; }
@@ -66,7 +66,7 @@ namespace error
   {
     std::string finalLine = lineend == -1 ? std::to_string(linestart) + "+" : linestart == lineend ? std::to_string(linestart)
                                                                                                    : std::to_string(linestart) + "-" + std::to_string(lineend);
-    std::string finalCol = columnend == -1 ? std::to_string(columnstart) + "+" : std::to_string(columnstart) + "-" + std::to_string(columnend);
+    std::string finalCol = columnend == -1 ? std::to_string(columnstart) + "+" : std::to_string(columnstart + 1) + "-" + std::to_string(columnend + 1);
 
     if (first)
       std::cout << "  -----------------------------------------\n";
@@ -139,7 +139,7 @@ namespace error
     static const std::regex tokenRegex(R"(\w+|[^\w\s]+|\s+)");
     static const std::regex stringRegex(R"(^".*"$)");
     // Keywords excluding these new types
-    static const std::regex keywordRegex(R"(\b(if|else|for|while|return|class|struct|fn|void)\b)");
+    static const std::regex keywordRegex(R"(\b(public|const|let|if|else|for|while|return|class|struct|fn|void)\b)");
     // Updated type regex
     static const std::regex typeRegex(R"(\b(number|string|array)\b)");
     static const std::regex numberRegex(R"(^\d+(\.\d+)?$)");

@@ -43,6 +43,10 @@ namespace parser
     MEMBER,
     PRIMARY
   };
+
+  //*---------------
+  //*    LOOKUPS
+  //*---------------
   typedef ast::Statement *statement_handler(parser::parser_ &parser);
   typedef ast::Expression *nud_handler(parser::parser_ &parser);
   typedef ast::Expression *led_handler(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
@@ -66,12 +70,30 @@ namespace parser
   //*--------------------
   //*    TYPE LOOKUPS
   //*--------------------
-  // TODO: Implement when needed
+  typedef ast::Type *type_nud_handler(parser::parser_ &parser);
+  typedef ast::Type *type_led_handler(parser::parser_ &parser, ast::Type *left, parser::BindingPower binding_power);
+
+  typedef std::unordered_map<lexer::TokenKind, type_nud_handler *> type_nud_lookup;
+  typedef std::unordered_map<lexer::TokenKind, type_led_handler *> type_led_lookup;
+  typedef std::unordered_map<lexer::TokenKind, BindingPower *> type_binding_power_lookup;
+
+  extern type_nud_lookup type_nud_lu;
+  extern type_led_lookup type_led_lu;
+  extern type_binding_power_lookup type_binding_power_lu;
+
+  void type_led(lexer::TokenKind kind, BindingPower binding_power, type_led_handler *handler);
+  void type_nud(lexer::TokenKind kind, type_nud_handler *handler);
+
+  void create_token_type_lookups();
+
+  ast::Type *parse_symbol_type(parser::parser_ &parser);
+  ast::Type parse_type(parser::parser_ &parser, BindingPower binding_power);
 
   //*------------------
   //*    STATEMENTS
   //*------------------
   ast::Statement *parse_statement(parser::parser_ &parser);
+  ast::Statement *parse_variable_declaration_statement(parser_ &parser);
 
   //*-------------------
   //*    EXPRESSIONS
@@ -80,6 +102,8 @@ namespace parser
   ast::Expression *parse_primary_expression(parser::parser_ &parser);
   std::unordered_map<std::string, ast::Expression *> parse_properties(parser::parser_ &parser, lexer::Token &closecurly);
   ast::Expression *parse_binary_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
+
+  std::vector<ast::Expression *> parse_args(parser_ &parser);
 }
 
 #endif // PARSER_H

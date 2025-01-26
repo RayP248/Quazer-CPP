@@ -37,7 +37,7 @@ namespace error
   public:
     ErrorImportance importance;
     Error(ErrorCode code, std::string message, int linestart, int lineend, int columnstart, int columnend, std::string origin, ErrorImportance importance);
-    void print(bool not_first, bool not_last);
+    void print(bool first, bool last);
 
   private:
     void highlightLine(const std::string &line);

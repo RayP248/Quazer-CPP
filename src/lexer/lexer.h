@@ -65,6 +65,7 @@ namespace lexer {
     PACKAGE,     // package
     CONST,       // const
     LET,         // let
+    PUBLIC,      // public
     STRUCT,      // struct
     FN,          // fn
     RETURN,      // return
@@ -101,6 +102,7 @@ namespace lexer {
   lexer::Token new_token(lexer::TokenKind kind, std::string value, int linestart, int lineend, int columnstart, int columnend);
   std::vector<lexer::Token> tokenize(std::string input);
   std::string token_kind_to_string(TokenKind kind);
+  std::string token_kind_to_symbol(TokenKind kind);
 }
 
 #endif // LEXER_H

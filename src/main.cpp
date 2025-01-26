@@ -87,8 +87,39 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       return std::string(indent, ' ');
     };
 
+    std::function<std::string(const ast::Type *, int)> printType;
     std::function<std::string(const ast::Statement *, int)> printStmt;
     std::function<std::string(const ast::Expression *, int)> printExpr;
+
+    printType = [&](const ast::Type *node, int level) -> std::string
+    {
+      if (!node)
+        return "";
+
+      std::string result;
+      result += indentFunc(level) + "Type {\n";
+      result += indentFunc(level + 2) + "name: \"" + node->name + "\",\n";
+      std::string generics_str = "[";
+      for (size_t i = 0; i < node->generics.size(); ++i)
+      {
+        generics_str += printType(&node->generics[i], level + 2);
+        if (i + 1 < node->generics.size())
+          generics_str += ", ";
+      }
+      generics_str += "]";
+      result += indentFunc(level + 2) + "generics: " + generics_str + ",\n";
+      std::string fields_str = "[";
+      for (size_t i = 0; i < node->fields.size(); ++i)
+      {
+        fields_str += printType(&node->fields[i], level + 2);
+        if (i + 1 < node->fields.size())
+          fields_str += ", ";
+      }
+      fields_str += "]";
+      result += indentFunc(level + 2) + "is_inferred: " + std::to_string(node->is_inferred) + ",\n";
+      result += indentFunc(level) + "}";
+      return result;
+    };
 
     printExpr = [&](const ast::Expression *node, int level) -> std::string
     {
@@ -97,8 +128,11 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
 
       std::string result;
       result += indentFunc(level) + ast::statement_kind_to_string(node->kind) + " {\n";
-      result += indentFunc(level + 2) + "kind: \"" + ast::statement_kind_to_string(node->kind) + "\",\n";
-
+      result += indentFunc(level + 2) + "kind: " + std::to_string(node->kind) + ",\n";
+      result += indentFunc(level + 2) + "linestart: " + std::to_string(node->linestart) + ",\n";
+      result += indentFunc(level + 2) + "lineend: " + std::to_string(node->lineend) + ",\n";
+      result += indentFunc(level + 2) + "columnstart: " + std::to_string(node->columnstart) + ",\n";
+      result += indentFunc(level + 2) + "columnend: " + std::to_string(node->columnend) + ",";
       if (auto binExpr = dynamic_cast<const ast::BinaryExpression *>(node))
       {
         result += indentFunc(level + 2) + "left:\n" + printExpr(dynamic_cast<const ast::Expression *>(binExpr->left), level + 4) + ",\n";
@@ -114,18 +148,18 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       }
       else if (auto numExpr = dynamic_cast<const ast::NumberExpression *>(node))
       {
-        result += indentFunc(level + 2) + "value: " + std::to_string(numExpr->value) + "\n";
+        result += "\n" + indentFunc(level + 2) + "value: " + std::to_string(numExpr->value);
       }
       else if (auto strExpr = dynamic_cast<const ast::StringExpression *>(node))
       {
-        result += indentFunc(level + 2) + "value: \"" + strExpr->value + "\"\n";
+        result += "\n" + indentFunc(level + 2) + "value: \"" + strExpr->value + "\"";
       }
       else if (auto symExpr = dynamic_cast<const ast::SymbolExpression *>(node))
       {
-        result += indentFunc(level + 2) + "value: \"" + symExpr->value + "\"\n";
+        result += "\n" + indentFunc(level + 2) + "value: \"" + symExpr->value + "\"";
       }
 
-      result += indentFunc(level) + "}";
+      result += "\n" + indentFunc(level) + "}";
       return result;
     };
 
@@ -136,7 +170,7 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
 
       std::string result;
       result += indentFunc(level) + ast::statement_kind_to_string(node->kind) + " {\n";
-      result += indentFunc(level + 2) + "kind: \"" + ast::statement_kind_to_string(node->kind) + "\",\n";
+      result += indentFunc(level + 2) + "kind: " + std::to_string(node->kind) + ",\n";
       result += indentFunc(level + 2) + "linestart: " + std::to_string(node->linestart) + ",\n";
       result += indentFunc(level + 2) + "lineend: " + std::to_string(node->lineend) + ",\n";
       result += indentFunc(level + 2) + "columnstart: " + std::to_string(node->columnstart) + ",\n";
@@ -156,6 +190,14 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
             result += ",\n";
         }
         result += "\n" + indentFunc(level + 2) + "]";
+      }
+      else if (auto var_decl_stmt = dynamic_cast<const ast::VariableDeclarationStatement *>(node))
+      {
+        result += ",\n" + indentFunc(level + 2) + "name: \"" + var_decl_stmt->name + "\",\n";
+        result += indentFunc(level + 2) + "type: \n" + printType(&var_decl_stmt->type, level + 4) + ",\n";
+        result += indentFunc(level + 2) + "value: \n" + printExpr(var_decl_stmt->value, level + 4) + ",\n";
+        result += indentFunc(level + 2) + "is_const: " + (var_decl_stmt->is_const ? "true" : "false") + ",\n";
+        result += indentFunc(level + 2) + "is_public: " + (var_decl_stmt->is_public ? "true" : "false") + "\n";
       }
 
       result += "\n" + indentFunc(level) + "}";
@@ -185,6 +227,7 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
   return output;
 }
 
+/*
 static std::string print_value(const interpreter::runtime_value &value)
 {
   // filepath: /y:/Lexar/C++Projects/Quazer/src/main.cpp
@@ -211,6 +254,7 @@ static std::string print_value(const interpreter::runtime_value &value)
   return "Unknown";
 }
 
+*/
 int main(int argc, char **argv)
 {
   global::currfile = argv[1];
@@ -222,20 +266,36 @@ int main(int argc, char **argv)
 
   std::string input((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
   auto tokens = lexer::tokenize(input);
-  std::cout << "Tokens:\n"; // commented out
+  if (global::errors.size() > 0)
+  {
+    std::cout << "Errors:\n";
+    for (auto &err : global::errors)
+    {
+      err.print(&global::errors[0] == &err, &global::errors[global::errors.size() - 1] == &err);
+    }
+  }
+  std::cout << "Tokens:\n";
   for (const auto &token : tokens)
   {
-    token.debug(); // commented out
+    token.debug();
   }
-  std::cout << "------------------------------------\n"; // commented out
+  std::cout << "------------------------------------\n";
   auto program = parser::parse(tokens);
+  if (global::errors.size() > 0)
+  {
+    std::cout << "Errors:\n";
+    for (auto &err : global::errors)
+    {
+      err.print(&global::errors[0] == &err, &global::errors[global::errors.size() - 1] == &err);
+    }
+  }
   // std::cout << "Finished Parsing\n";
   std::string output = print_AST(&program);
-  std::cout << output; // commented out
+  std::cout << output;
   std::ofstream outFile("output.txt");
   if (outFile.is_open())
   {
-    // outFile << output; // commented out
+    // outFile << output;
     outFile.close();
   }
   else
@@ -244,17 +304,18 @@ int main(int argc, char **argv)
     return 1;
   }
   interpreter::Environment *global_env = interpreter::create_global_environment();
-  interpreter::ASTVariant program_variant = &program;
+  ast::ASTVariant program_variant = &program;
   std::unique_ptr<interpreter::runtime_value> result = interpreter::interpret(&program_variant, global_env);
   if (global::errors.size() > 0)
   {
     std::cout << "Errors:\n";
     for (auto &err : global::errors)
     {
-      err.print(&global::errors[0] != &err, &global::errors[global::errors.size() - 1] != &err);
+      err.print(&global::errors[0] == &err, &global::errors[global::errors.size() - 1] == &err);
     }
-    std::cout << "------------------------------------\n";
+    exit(1);
   }
-  std::cout << "Result: " << print_value(*result) << std::endl; // commented out
+  std::cout << "------------------------------------\n";
+  std::cout << "Result: " << interpreter::print_value(*result) << std::endl;
   return 0;
 }

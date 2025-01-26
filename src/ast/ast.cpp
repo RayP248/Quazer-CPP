@@ -6,12 +6,16 @@ namespace ast
   {
     switch (kind)
     {
-    case PROGRAM:
-      return "Program";
     case STATEMENT:
       return "Statement";
+    case PROGRAM:
+      return "Program";
     case EXPRESSION_STATEMENT:
       return "ExpressionStatement";
+    case BLOCK_STATEMENT:
+      return "BlockStatement";
+    case VARIABLE_DECLARATION_STATEMENT:
+      return "VariableDeclarationStatement";
     case BINARY_EXPRESSION:
       return "BinaryExpression";
     case NUMBER_EXPRESSION:
@@ -20,8 +24,6 @@ namespace ast
       return "SymbolExpression";
     case STRING_EXPRESSION:
       return "StringExpression";
-    case BLOCK_STATEMENT:
-      return "BlockStatement";
     default:
       return "Unknown";
     }
