@@ -91,7 +91,7 @@ namespace parser
 
   ast::Program parse(const std::vector<lexer::Token> &tokens)
   {
-    // DEBUG**std::cerr << "[parse] Starting parse with " << tokens.size() << " tokens\n";
+    // [DEBUG**] std::cerr << "[parse] Starting parse with " << tokens.size() << " tokens\n";
     parser_ p = create_parser_(tokens);
     ast::Program *program = new ast::Program();
 
@@ -108,7 +108,7 @@ namespace parser
         std::cerr << "[parse] Received null statement\n";
     }
 
-    // DEBUG**std::cerr << "[parse] Finished creating Program node with " << program->body.size() << " statements\n";
+    // [DEBUG**] std::cerr << "[parse] Finished creating Program node with " << program->body.size() << " statements\n";
     program->linestart = tokens.front().linestart;
     program->lineend = tokens.back().lineend;
     program->columnstart = tokens.front().columnstart;
@@ -212,10 +212,6 @@ namespace parser
   void create_token_type_lookups()
   {
     type_nud(lexer::TokenKind::IDENTIFIER, parse_symbol_type);
-
-    // Ensure any led handlers for types match the expected signature
-    // Example:
-    // type_led(lexer::TokenKind::SOME_KIND, BindingPower::SOME_POWER, parse_some_type_led_handler);
   }
 
   ast::Type *parse_symbol_type(parser_ &parser)
@@ -272,23 +268,25 @@ namespace parser
   //*------------------
   ast::Statement *parse_statement(parser_ &parser)
   {
-    // DEBUG**std::cerr << "[parse_statement] Current token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
+    // [DEBUG**] std::cerr << "[parse_statement] Current token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
     auto statement_handler = statement_lu[parser.current_kind()];
-    // DEBUG**std::cerr << "[parse_statement] Statement handler is "
-    // DEBUG**<< (statement_handler ? "available" : "null") << "\n";
+    // [DEBUG**] std::cerr << "[parse_statement] Statement handler is "
+    // [DEBUG**] << (statement_handler ? "available" : "null") << "\n";
 
     if (statement_handler != nullptr)
     {
-      // DEBUG**std::cerr << "[parse_statement] Found statement handler for token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
+      // [DEBUG**] std::cerr << "[parse_statement] Found statement handler for token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
       return statement_handler(parser); // Return pointer directly
     }
 
-    // DEBUG**std::cerr << "[parse_statement] No statement handler found for token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
+    // [DEBUG**] std::cerr << "[parse_statement] No statement handler found for token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
 
     ast::Expression *expression = parse_expression(parser, DEFAULT);
+    // [DEBUG**] std::cerr << "[parse_statement] Expression parsed\n";
     parser.expect(lexer::TokenKind::SEMICOLON, "parser.cpp : parse_statement() : Expected ';' after expression");
+    // [DEBUG**] std::cerr << "[parse_statement] Semicolon parsed\n";
 
-    // DEBUG**std::cerr << "[parse_statement] Creating ExpressionStatement\n";
+    // [DEBUG**] std::cerr << "[parse_statement] Creating ExpressionStatement\n";
     ast::ExpressionStatement *exprstmt = new ast::ExpressionStatement();
     exprstmt->expression = expression;
     exprstmt->linestart = expression->linestart;
@@ -384,14 +382,14 @@ namespace parser
   ast::Statement *parse_function_declaration_statement(parser_ &parser)
   {
     ast::FunctionDeclarationStatement *fn_decl = new ast::FunctionDeclarationStatement();
-    // DEBUG**std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
+    // [DEBUG**] std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
     lexer::Token keyword = parser.expect(lexer::TokenKind::FN, "parser.cpp : parse_function_declaration_statement() : Expected 'fn' keyword");
-    // DEBUG**std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
+    // [DEBUG**] std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
     lexer::Token identifier = parser.expect(lexer::TokenKind::IDENTIFIER, "parser.cpp : parse_function_declaration_statement() : Expected function name after 'fn' keyword");
 
-    // DEBUG**std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
+    // [DEBUG**] std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
     parser.expect(lexer::TokenKind::OPEN_PAREN, "parser.cpp : parse_function_declaration_statement() : Expected '(' after function name");
-    // DEBUG**std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
+    // [DEBUG**] std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
     std::vector<ast::ParameterExpression *> parameters = parse_parameters(parser);
     parser.expect(lexer::TokenKind::CLOSE_PAREN, "parser.cpp : parse_function_declaration_statement() : Expected ')' after function parameters");
 
@@ -438,8 +436,12 @@ namespace parser
               stmt->columnend,
               "parser.cpp : parse_block_statement()",
               error::ErrorImportance::MODERATE);
+          return_stmt = dynamic_cast<ast::ReturnStatement *>(stmt);
         }
-        return_stmt = dynamic_cast<ast::ReturnStatement *>(stmt);
+        else
+        {
+          return_stmt = dynamic_cast<ast::ReturnStatement *>(stmt);
+        }
       }
       block->body.push_back(stmt);
     }
@@ -474,20 +476,24 @@ namespace parser
   //*-------------------
   ast::Expression *parse_expression(parser::parser_ &parser, BindingPower binding_power)
   {
-    // DEBUG**std::cerr << "[parse_expression] Start with token kind: " << lexer::token_kind_to_string(parser.current_kind())
-    // DEBUG**<< ", binding_power: " << binding_power << "\n";
-
+    // [DEBUG**] std::cerr << "[parse_expression] Start with token kind: " << lexer::token_kind_to_string(parser.current_kind())
+    // [DEBUG**] << ", binding_power: " << binding_power << "\n";
     // If current token is not found in the binding_power_lu, break
     if (!binding_power_lu.count(parser.current_kind()))
     {
+      std::cout << "[parse_expression] No binding power found for token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
       return new ast::DummyExpression();
     }
 
+    // [DEBUG**] std::cout << "[parse_expression] Current token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
     lexer::TokenKind token_kind = parser.current_kind();
+    // [DEBUG**] std::cout << "[parse_expression] Token kind: " << lexer::token_kind_to_string(token_kind) << "\n";
     auto nud_handler = nud_lu[token_kind];
+    // [DEBUG**] std::cout << "[parse_expression] NUD handler: " << (nud_handler ? "available" : "null") << "\n";
 
     if (nud_handler == nullptr)
     {
+      // [DEBUG**] std::cout << "[parse_expression] No NUD handler found for token kind: " << lexer::token_kind_to_string(token_kind) << "\n";
       error::Error err(
           error::ErrorCode::PARSER_ERROR,
           "No NUD function found for token of kind '" + lexer::token_kind_to_string(token_kind) + "'",
@@ -497,16 +503,18 @@ namespace parser
           parser.current_token().columnend,
           "parser.cpp : parse_expression()",
           error::ErrorImportance::MODERATE);
+      // [DEBUG**] std::cout << "[parse_expression] Returning dummy expression\n";
       return new ast::DummyExpression();
     }
 
     ast::Expression *left = nud_handler(parser);
+    // [DEBUG**] std::cout << "[parse_expression] Left expression kind: " << (left ? ast::statement_kind_to_string(left->kind) : "null") << "\n";
 
     while (binding_power_lu.count(parser.current_kind()) &&
            *binding_power_lu[parser.current_kind()] > binding_power)
     {
-      // DEBUG**std::cerr << "[parse_expression] In while loop, token kind: " << lexer::token_kind_to_string(parser.current_kind())
-      // DEBUG**<< ", next binding_power: " << *binding_power_lu[parser.current_kind()] << "\n";
+      // [DEBUG**] std::cerr << "[parse_expression] In while loop, token kind: " << lexer::token_kind_to_string(parser.current_kind())
+      // [DEBUG**] << ", next binding_power: " << *binding_power_lu[parser.current_kind()] << "\n";
       token_kind = parser.current_kind();
       auto led_handler = led_lu[token_kind];
       if (led_handler == nullptr)
@@ -526,19 +534,19 @@ namespace parser
       left = led_handler(parser, left, *binding_power_lu[parser.current_kind()]);
     }
 
-    // DEBUG**std::cerr << "[parse_expression] Returning expression of kind: " << (left ? ast::statement_kind_to_string(left->kind) : "null expression") << "\n";
+    // [DEBUG**] std::cerr << "[parse_expression] Returning expression of kind: " << (left ? ast::statement_kind_to_string(left->kind) : "null expression") << "\n";
     return left;
   }
   ast::Expression *parse_primary_expression(parser::parser_ &parser)
   {
-    // DEBUG**std::cerr << "[parse_primary_expression] Current token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
+    // [DEBUG**] std::cerr << "[parse_primary_expression] Current token kind: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
     switch (parser.current_kind())
     {
     case lexer::TokenKind::NUMBER:
     {
       auto token = parser.current_token();
       ast::NumberExpression *literal = new ast::NumberExpression(std::stod(token.value));
-      // DEBUG**std::cout << "[parse_primary_expression] Creating NumberExpression with value: " << parser.current_token().value << "\n";
+      // [DEBUG**] std::cout << "[parse_primary_expression] Creating NumberExpression with value: " << parser.current_token().value << "\n";
       literal->linestart = parser.current_token().linestart;
       literal->lineend = parser.current_token().lineend;
       literal->columnstart = parser.current_token().columnstart;
@@ -573,7 +581,7 @@ namespace parser
     }
     default:
     {
-      // DEBUG**std::cerr << "[parse_primary_expression] Returning null expression from default case\n";
+      // [DEBUG**] std::cerr << "[parse_primary_expression] Returning null expression from default case\n";
       error::Error err(
           error::ErrorCode::PARSER_ERROR,
           "Cannot create primary expression from token of kind '" + lexer::token_kind_to_string(parser.current_kind()) + "'",
@@ -589,8 +597,8 @@ namespace parser
   }
   ast::Expression *parse_binary_expression(parser::parser_ &parser, ast::Expression *left, BindingPower binding_power)
   {
-    // DEBUG**std::cerr << "[parse_binary_expression] Left expression kind: " << (left ? ast::statement_kind_to_string(left->kind) : "null")
-    // DEBUG**<< ", operator token: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
+    // [DEBUG**] std::cerr << "[parse_binary_expression] Left expression kind: " << (left ? ast::statement_kind_to_string(left->kind) : "null")
+    // [DEBUG**] << ", operator token: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
     lexer::Token op = parser.advance();
     ast::Expression *right = parse_expression(parser, binding_power);
 
@@ -604,20 +612,27 @@ namespace parser
     binary_expr->columnend = right->columnend;
     binary_expr->kind = ast::StatementKind::BINARY_EXPRESSION;
 
-    // DEBUG**std::cerr << "[parse_binary_expression] Returning BinaryExpression\n";
+    // [DEBUG**] std::cerr << "[parse_binary_expression] Returning BinaryExpression\n";
     return binary_expr;
   }
-  ast::Expression *parse_call_expression(parser_ &parser, ast::Expression *left, BindingPower binding_power)
+  ast::Expression *parse_call_expression(parser::parser_ &parser, ast::Expression *left, BindingPower binding_power)
   {
+    // [DEBUG**] std::cerr << "[parse_call_expression] Left expression kind: " << (left ? ast::statement_kind_to_string(left->kind) : "null")
+    // [DEBUG**] << ", operator token: " << lexer::token_kind_to_string(parser.current_kind()) << "\n";
+    lexer::Token open_paren = parser.expect(lexer::TokenKind::OPEN_PAREN, "parser.cpp : parse_call_expression() : Expected '(' after function name");
+    std::vector<ast::Expression *> args = parse_args(parser);
+    lexer::Token close_paren = parser.expect(lexer::TokenKind::CLOSE_PAREN, "parser.cpp : parse_call_expression() : Expected ')' after function arguments");
+
     ast::CallExpression *call_expr = new ast::CallExpression();
-    call_expr->kind = ast::StatementKind::CALL_EXPRESSION;
-    call_expr->function = dynamic_cast<std::variant<ast::SymbolExpression> *>(left);
-    call_expr->args = parse_args(parser);
+    call_expr->function = left;
+    call_expr->args = args;
     call_expr->linestart = left->linestart;
-    call_expr->lineend = parser.current_token().lineend;
+    call_expr->lineend = close_paren.lineend;
     call_expr->columnstart = left->columnstart;
-    call_expr->columnend = parser.current_token().columnend;
-    parser.expect(lexer::TokenKind::CLOSE_PAREN, "parser.cpp : parse_call_expression() : Expected ')' after call arguments");
+    call_expr->columnend = close_paren.columnend;
+    call_expr->kind = ast::StatementKind::CALL_EXPRESSION;
+
+    // [DEBUG**] std::cerr << "[parse_call_expression] Returning CallExpression\n";
     return call_expr;
   }
 
@@ -627,13 +642,13 @@ namespace parser
   std::vector<ast::Expression *> parse_args(parser_ &parser)
   {
     std::vector<ast::Expression *> args;
-    while (parser.current_kind() != lexer::TokenKind::CLOSE_PAREN)
+    while (parser.current_kind() != lexer::TokenKind::CLOSE_PAREN && parser.current_kind() != lexer::TokenKind::EOF_)
     {
-      ast::Expression *expr = parse_expression(parser, DEFAULT);
-      args.push_back(expr);
-      if (parser.current_kind() == lexer::TokenKind::OPEN_PAREN)
+      ast::Expression *arg = parse_expression(parser, DEFAULT);
+      args.push_back(arg);
+      if (parser.current_kind() == lexer::TokenKind::CLOSE_PAREN)
         break;
-      parser.expect(lexer::TokenKind::COMMA, "parser.cpp : parse_args() : Expected ',' after argument.");
+      parser.expect(lexer::TokenKind::COMMA, "parser.cpp : parse_args() : Expected ',' between arguments");
     }
     return args;
   }
@@ -644,8 +659,8 @@ namespace parser
 
     while (parser.current_kind() != lexer::TokenKind::CLOSE_PAREN)
     {
-      // DEBUG**std::cout << "[parse_parameters] processing token: " << parser.current_token().value
-      // DEBUG**          << " (" << lexer::token_kind_to_string(parser.current_kind()) << ")\n";
+      // [DEBUG**] std::cout << "[parse_parameters] processing token: " << parser.current_token().value
+      // [DEBUG**] << " (" << lexer::token_kind_to_string(parser.current_kind()) << ")\n";
 
       if (!first_param)
       {
@@ -691,24 +706,13 @@ namespace parser
       param->columnstart = identifier.columnstart;
 
       // Parse parameter type
-      if (parser.current_kind() != lexer::TokenKind::COLON)
+      if (parser.current_kind() == lexer::TokenKind::COLON)
       {
-        error::Error err(
-            error::ErrorCode::PARSER_ERROR,
-            "Expected ':' after parameter name '" + identifier.value + "'",
-            parser.current_token().linestart,
-            parser.current_token().lineend,
-            parser.current_token().columnstart,
-            parser.current_token().columnend,
-            "parser.cpp : parse_parameters()",
-            error::ErrorImportance::HIGH);
-        delete param;
-        break;
-      }
-      parser.advance(); // consume colon
+        parser.advance(); // consume colon
 
-      param->type = parse_type(parser, DEFAULT);
-      params.push_back(param);
+        param->type = parse_type(parser, DEFAULT);
+        params.push_back(param);
+      }
       first_param = false;
     }
 

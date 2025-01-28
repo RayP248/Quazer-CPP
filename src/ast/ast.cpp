@@ -20,6 +20,8 @@ namespace ast
       return "ReturnStatement";
     case FUNCTION_DECLARATION_STATEMENT:
       return "FunctionDeclarationStatement";
+    case IF_STATEMENT:
+      return "IfStatement";
     case NUMBER_EXPRESSION:
       return "NumberExpression";
     case SYMBOL_EXPRESSION:

@@ -163,6 +163,18 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
         result += "\n" + indentFunc(level + 2) + "name: \"" + paramExpr->name + "\",\n";
         result += indentFunc(level + 2) + "type: \n" + printType(&paramExpr->type, level + 4);
       }
+      else if (auto callExpr = dynamic_cast<const ast::CallExpression *>(node))
+      {
+        result += "\n" + indentFunc(level + 2) + "function:\n" + printExpr(callExpr->function, level + 4) + ",\n";
+        result += indentFunc(level + 2) + "args: [\n";
+        for (size_t i = 0; i < callExpr->args.size(); i++)
+        {
+          result += printExpr(callExpr->args[i], level + 4);
+          if (i + 1 < callExpr->args.size())
+            result += ",\n";
+        }
+        result += "\n" + indentFunc(level + 2) + "]";
+      }
 
       result += "\n" + indentFunc(level) + "}";
       return result;
@@ -229,7 +241,7 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       else if (auto return_stmt = dynamic_cast<const ast::ReturnStatement *>(node))
       {
         result += ",\n" + indentFunc(level + 2) + "value:\n";
-        if (return_stmt->value)
+        if (return_stmt != nullptr)
         {
           result += printExpr(return_stmt->value, level + 4);
         }
@@ -312,6 +324,7 @@ int main(int argc, char **argv)
     {
       err.print(&global::errors[0] == &err, &global::errors[global::errors.size() - 1] == &err);
     }
+    return 1;
   }
   std::cout << "Tokens:\n";
   for (const auto &token : tokens)
@@ -327,14 +340,15 @@ int main(int argc, char **argv)
     {
       err.print(&global::errors[0] == &err, &global::errors[global::errors.size() - 1] == &err);
     }
+    return 1;
   }
-  // std::cout << "Finished Parsing\n";
+  std::cout << "Finished Parsing\n";
   std::string output = print_AST(&program);
   std::cout << output;
   std::ofstream outFile("output.txt");
   if (outFile.is_open())
   {
-    // outFile << output;
+    outFile << output;
     outFile.close();
   }
   else
@@ -342,19 +356,9 @@ int main(int argc, char **argv)
     std::cerr << "Unable to open output file";
     return 1;
   }
-  interpreter::Environment *global_env = interpreter::create_global_environment();
-  ast::ASTVariant program_variant = &program;
-  std::unique_ptr<interpreter::runtime_value> result = interpreter::interpret(&program_variant, global_env);
-  if (global::errors.size() > 0)
-  {
-    std::cout << "Errors:\n";
-    for (auto &err : global::errors)
-    {
-      err.print(&global::errors[0] == &err, &global::errors[global::errors.size() - 1] == &err);
-    }
-    exit(1);
-  }
-  std::cout << "------------------------------------\n";
-  std::cout << "Result: " << interpreter::print_value(*result) << std::endl;
+  auto env = interpreter::create_global_environment();
+  ast::ASTVariant variant_program = &program;
+  auto result = interpreter::interpret(&variant_program, env, false);
+  std::cout << "Final Result: " << print_value(*result) << "\n";
   return 0;
 }

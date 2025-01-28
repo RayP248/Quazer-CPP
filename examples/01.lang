@@ -45,7 +45,7 @@ if a == b, then {
 class Person {
   -- Constructor
   constructor (name: string, age: number) {
-    this.name = age;
+    this.name = name;
     this.age = age;
   }
 
@@ -57,7 +57,7 @@ class Person {
 
   show() {
     -- '%()' is used for variables inside template literals.
-    print('Person: %(ths.naime)\nAge: %(this.age)')
+    print('Person: %(this.name)\nAge: %(this.age)')
   }
 }
 
@@ -65,7 +65,7 @@ class Person {
 const sub: function = (x: number, y: number) :> x - y;
 
 -- Iterate 1 through 10 and print their value.
-for const val, 1..10 {
+for const val : 1..10 {
   print(val);
 }
 

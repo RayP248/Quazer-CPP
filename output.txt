@@ -1,0 +1,320 @@
+Program {
+  kind: "Program",
+  body: [
+    VariableDeclarationStatement {
+      kind: 4,
+      linestart: 1,
+      lineend: 1,
+      columnstart: 1,
+      columnend: 25,
+      name: "foo",
+      type: 
+        Type {
+          name: "number",
+          generics: [],
+          is_inferred: 1,
+        },
+      value: 
+        NumberExpression {
+          kind: 7,
+          linestart: 1,
+          lineend: 1,
+          columnstart: 22,
+          columnend: 24,
+          value: 10.000000
+        },
+      is_const: true,
+      is_public: false
+    },
+    FunctionDeclarationStatement {
+      kind: 6,
+      linestart: 3,
+      lineend: 9,
+      columnstart: 0,
+      columnend: 1,
+      name: "makeAdder",
+      parameters: [
+
+      ],
+      body: 
+        BlockStatement {
+          kind: 3,
+          linestart: 3,
+          lineend: 9,
+          columnstart: 27,
+          columnend: 1,
+          body: [
+            FunctionDeclarationStatement {
+              kind: 6,
+              linestart: 4,
+              lineend: 7,
+              columnstart: 2,
+              columnend: 3,
+              name: "add",
+              parameters: [
+                ExpressionStatement {
+                  kind: 2,
+                  linestart: 4,
+                  lineend: 0,
+                  columnstart: 9,
+                  columnend: 0,
+                  name: "x",
+                  type: 
+                    Type {
+                      name: "number",
+                      generics: [],
+                      is_inferred: 1,
+                    }
+                },
+                ExpressionStatement {
+                  kind: 2,
+                  linestart: 4,
+                  lineend: 0,
+                  columnstart: 19,
+                  columnend: 0,
+                  name: "y",
+                  type: 
+                    Type {
+                      name: "number",
+                      generics: [],
+                      is_inferred: 1,
+                    }
+                },
+                ExpressionStatement {
+                  kind: 2,
+                  linestart: 4,
+                  lineend: 0,
+                  columnstart: 29,
+                  columnend: 0,
+                  name: "offset",
+                  type: 
+                    Type {
+                      name: "number",
+                      generics: [],
+                      is_inferred: 1,
+                    }
+                }
+              ],
+              body: 
+                BlockStatement {
+                  kind: 3,
+                  linestart: 4,
+                  lineend: 7,
+                  columnstart: 55,
+                  columnend: 3,
+                  body: [
+                    VariableDeclarationStatement {
+                      kind: 4,
+                      linestart: 5,
+                      lineend: 5,
+                      columnstart: 4,
+                      columnend: 37,
+                      name: "z",
+                      type: 
+                        Type {
+                          name: "number",
+                          generics: [],
+                          is_inferred: 1,
+                        },
+                      value: 
+                        BinaryExpression {
+                          kind: 10,
+                          linestart: 5,
+                          lineend: 5,
+                          columnstart: 22,
+                          columnend: 36,
+                          left:
+                            BinaryExpression {
+                              kind: 10,
+                              linestart: 5,
+                              lineend: 5,
+                              columnstart: 22,
+                              columnend: 27,
+                              left:
+                                SymbolExpression {
+                                  kind: 8,
+                                  linestart: 5,
+                                  lineend: 5,
+                                  columnstart: 22,
+                                  columnend: 23,
+                                  value: "x"
+                                },
+                              op: {
+                                kind: "PLUS",
+                                value: "+",
+                                linestart: 5,
+                                lineend: 5,
+                                columnstart: 24,
+                                columnend: 25
+                              },
+                              right:
+                                SymbolExpression {
+                                  kind: 8,
+                                  linestart: 5,
+                                  lineend: 5,
+                                  columnstart: 26,
+                                  columnend: 27,
+                                  value: "y"
+                                }
+                            },
+                          op: {
+                            kind: "PLUS",
+                            value: "+",
+                            linestart: 5,
+                            lineend: 5,
+                            columnstart: 28,
+                            columnend: 29
+                          },
+                          right:
+                            SymbolExpression {
+                              kind: 8,
+                              linestart: 5,
+                              lineend: 5,
+                              columnstart: 30,
+                              columnend: 36,
+                              value: "offset"
+                            }
+                        },
+                      is_const: true,
+                      is_public: false
+                    },
+                    ReturnStatement {
+                      kind: 5,
+                      linestart: 6,
+                      lineend: 6,
+                      columnstart: 4,
+                      columnend: 13,
+                      value:
+                        SymbolExpression {
+                          kind: 8,
+                          linestart: 6,
+                          lineend: 6,
+                          columnstart: 11,
+                          columnend: 12,
+                          value: "z"
+                        }
+                    }
+                  ]
+                },
+              return_type: 
+                Type {
+                  name: "number",
+                  generics: [],
+                  is_inferred: 1,
+                }
+              return_statement: nullptr
+            },
+            ReturnStatement {
+              kind: 5,
+              linestart: 8,
+              lineend: 8,
+              columnstart: 2,
+              columnend: 13,
+              value:
+                SymbolExpression {
+                  kind: 8,
+                  linestart: 8,
+                  lineend: 8,
+                  columnstart: 9,
+                  columnend: 12,
+                  value: "add"
+                }
+            }
+          ]
+        },
+      return_type: 
+        Type {
+          name: "function",
+          generics: [],
+          is_inferred: 1,
+        }
+      return_statement: nullptr
+    },
+    VariableDeclarationStatement {
+      kind: 4,
+      linestart: 11,
+      lineend: 11,
+      columnstart: 0,
+      columnend: 38,
+      name: "myAdder",
+      type: 
+        Type {
+          name: "function",
+          generics: [],
+          is_inferred: 1,
+        },
+      value: 
+        CallExpression {
+          kind: 11,
+          linestart: 11,
+          lineend: 11,
+          columnstart: 26,
+          columnend: 37,
+          function:
+            SymbolExpression {
+              kind: 8,
+              linestart: 11,
+              lineend: 11,
+              columnstart: 26,
+              columnend: 35,
+              value: "makeAdder"
+            },
+          args: [
+
+          ]
+        },
+      is_const: true,
+      is_public: false
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 13,
+      lineend: 13,
+      columnstart: 0,
+      columnend: 18,
+      expression:
+        CallExpression {
+          kind: 11,
+          linestart: 13,
+          lineend: 13,
+          columnstart: 0,
+          columnend: 18,
+          function:
+            SymbolExpression {
+              kind: 8,
+              linestart: 13,
+              lineend: 13,
+              columnstart: 0,
+              columnend: 7,
+              value: "myAdder"
+            },
+          args: [
+            NumberExpression {
+              kind: 7,
+              linestart: 13,
+              lineend: 13,
+              columnstart: 8,
+              columnend: 9,
+              value: 1.000000
+            },
+            NumberExpression {
+              kind: 7,
+              linestart: 13,
+              lineend: 13,
+              columnstart: 11,
+              columnend: 12,
+              value: 2.000000
+            },
+            SymbolExpression {
+              kind: 8,
+              linestart: 13,
+              lineend: 13,
+              columnstart: 14,
+              columnend: 17,
+              value: "foo"
+            }
+          ]
+        }
+    }
+  ]
+}

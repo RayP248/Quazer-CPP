@@ -1,8 +1,3 @@
-const foo : number = 10;
+fn power (base: number, exp: number) -> number {
 
-fn add(x: number, y: number) -> number {
-  const z : number = x + y;
-  return z;
 }
-
--- print(add(1, 2));

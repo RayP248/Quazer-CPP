@@ -18,6 +18,7 @@ namespace ast
     VARIABLE_DECLARATION_STATEMENT,
     RETURN_STATEMENT,
     FUNCTION_DECLARATION_STATEMENT,
+    IF_STATEMENT,
     NUMBER_EXPRESSION,
     SYMBOL_EXPRESSION,
     STRING_EXPRESSION,
@@ -137,7 +138,7 @@ namespace ast
 
   struct CallExpression : public Expression
   {
-    std::variant<SymbolExpression /*, MemberExpression **/> *function = nullptr;
+    ast::Expression *function = nullptr;
     std::vector<Expression *> args;
     CallExpression()
     {
@@ -242,6 +243,23 @@ namespace ast
       {
         delete param;
       }
+    }
+  };
+
+  struct IfStatement : public Statement
+  {
+    Expression *condition;
+    BlockStatement *then_branch;
+    IfStatement *else_branch;
+    IfStatement()
+    {
+      kind = StatementKind::IF_STATEMENT;
+    }
+    ~IfStatement() override
+    {
+      delete condition;
+      delete then_branch;
+      delete else_branch;
     }
   };
 
