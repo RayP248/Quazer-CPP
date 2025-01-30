@@ -1,3 +1,31 @@
 fn power (base: number, exp: number) -> number {
+  if exp == 0 { return 1; }
+  let b: number = base;
+  for (let i = 1; i < exp; i++) {
+    b = base * b;
+  }
 
+  return b;
 }
+
+fn fib (n: number) -> number {
+  if n == 0 { return 0; }
+  if n == 1 { return 1; }
+
+  let a: number = 0;
+  let b: number = 1;
+  let c: number = 0;
+
+  -* for (let i = 1; i < n; i = i + 1) {
+    c = a + b;
+    a = b;
+    b = c;
+  } *-
+
+  return c;
+}
+
+-- println("fib up to 10:");
+-* for (let i: number = 0; i < 10; i++) {
+  println("fib (", i, ") = ", fib(i));
+} *-

@@ -19,11 +19,14 @@ namespace ast
     RETURN_STATEMENT,
     FUNCTION_DECLARATION_STATEMENT,
     IF_STATEMENT,
+    FOR_LOOP_STATEMENT,
     NUMBER_EXPRESSION,
     SYMBOL_EXPRESSION,
     STRING_EXPRESSION,
     BINARY_EXPRESSION,
     CALL_EXPRESSION,
+    ASSIGNMENT_EXPRESSION,
+    VARIABLE_DECLARATION_EXPRESSION,
     DUMMY_EXPRESSION,
   };
 
@@ -121,8 +124,8 @@ namespace ast
   // Complex Expressions
   struct BinaryExpression : public Expression
   {
-    Expression *left = nullptr;  // Changed from Statement* to Expression*
-    Expression *right = nullptr; // Changed from Statement* to Expression*
+    Expression *left = nullptr;
+    Expression *right = nullptr;
     lexer::Token op;
 
     BinaryExpression()
@@ -151,6 +154,40 @@ namespace ast
       {
         delete arg;
       }
+    }
+  };
+
+  struct AssignmentExpression : public Expression
+  {
+    Expression *left = nullptr;
+    Expression *right = nullptr;
+    lexer::Token op;
+    bool increment_decrement = false;
+    AssignmentExpression()
+    {
+      kind = StatementKind::ASSIGNMENT_EXPRESSION;
+    }
+    ~AssignmentExpression() override
+    {
+      delete left;
+      delete right;
+    }
+  };
+
+  struct VariableDeclarationExpression : public Expression
+  {
+    std::string name;
+    Expression *value = nullptr;
+    Type type;
+    bool is_const = false;
+    bool is_public = false;
+    VariableDeclarationExpression()
+    {
+      kind = StatementKind::VARIABLE_DECLARATION_EXPRESSION;
+    }
+    ~VariableDeclarationExpression() override
+    {
+      delete value;
     }
   };
 
@@ -249,8 +286,9 @@ namespace ast
   struct IfStatement : public Statement
   {
     Expression *condition;
-    BlockStatement *then_branch;
-    IfStatement *else_branch;
+    BlockStatement *then_branch = nullptr;
+    IfStatement *else_if_branch = nullptr;
+    BlockStatement *else_branch = nullptr;
     IfStatement()
     {
       kind = StatementKind::IF_STATEMENT;
@@ -260,6 +298,25 @@ namespace ast
       delete condition;
       delete then_branch;
       delete else_branch;
+    }
+  };
+
+  struct ForLoopStatement : public Statement
+  {
+    Expression *initializer;
+    Expression *condition;
+    Expression *post;
+    BlockStatement *body;
+    ForLoopStatement()
+    {
+      kind = StatementKind::FOR_LOOP_STATEMENT;
+    }
+    ~ForLoopStatement() override
+    {
+      delete initializer;
+      delete condition;
+      delete post;
+      delete body;
     }
   };
 

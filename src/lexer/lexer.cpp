@@ -9,44 +9,46 @@
 
 namespace lexer {
   std::unordered_map<std::string, lexer::TokenKind> ops = {
-    {"+", lexer::TokenKind::PLUS},
-    {"-", lexer::TokenKind::MINUS},
-    {"*", lexer::TokenKind::STAR},
-    {"/", lexer::TokenKind::SLASH},
-    {"%", lexer::TokenKind::PERCENT},
-    {"(", lexer::TokenKind::OPEN_PAREN},
-    {")", lexer::TokenKind::CLOSE_PAREN},
-    {"{", lexer::TokenKind::OPEN_CURLY},
-    {"}", lexer::TokenKind::CLOSE_CURLY},
-    {"[", lexer::TokenKind::OPEN_BRACE},
-    {"]", lexer::TokenKind::CLOSE_BRACE},
-    {".", lexer::TokenKind::DOT},
-    {"..", lexer::TokenKind::DOT_DOT},
-    {":", lexer::TokenKind::COLON},
-    {";", lexer::TokenKind::SEMICOLON},
-    {",", lexer::TokenKind::COMMA},
-    {"=", lexer::TokenKind::ASSIGNMENT},
-    {"+=", lexer::TokenKind::PLUS_ASSIGNMENT},
-    {"-=", lexer::TokenKind::MINUS_ASSIGNMENT},
-    {"*=", lexer::TokenKind::STAR_ASSIGNMENT},
-    {"/=", lexer::TokenKind::SLASH_ASSIGNMENT},
-    {"%=", lexer::TokenKind::PERCENT_ASSIGNMENT},
-    {"==", lexer::TokenKind::EQUAL},
-    {"!", lexer::TokenKind::NOT},
-    {"!=", lexer::TokenKind::NOT_EQUAL},
-    {">", lexer::TokenKind::GREATER},
-    {">=", lexer::TokenKind::GREATER_EQUAL},
-    {"<", lexer::TokenKind::LESS},
-    {"<=", lexer::TokenKind::LESS_EQUAL},
-    {"&&", lexer::TokenKind::AND},
-    {"||", lexer::TokenKind::OR},
-    {"->", lexer::TokenKind::TYPE_ARROW},
-    {":>", lexer::TokenKind::LAMBDA_ARROW},
-    {"'", lexer::TokenKind::SINGLE_QUOTE},
-    {"\"", lexer::TokenKind::DOUBLE_QUOTE},
-    {"--", lexer::TokenKind::DASH_DASH},
-    {"\\", lexer::TokenKind::BACK_SLASH},
-    {"`", lexer::TokenKind::BACK_TICK},
+      {"+", lexer::TokenKind::PLUS},
+      {"-", lexer::TokenKind::MINUS},
+      {"*", lexer::TokenKind::STAR},
+      {"/", lexer::TokenKind::SLASH},
+      {"%", lexer::TokenKind::PERCENT},
+      {"(", lexer::TokenKind::OPEN_PAREN},
+      {")", lexer::TokenKind::CLOSE_PAREN},
+      {"{", lexer::TokenKind::OPEN_CURLY},
+      {"}", lexer::TokenKind::CLOSE_CURLY},
+      {"[", lexer::TokenKind::OPEN_BRACE},
+      {"]", lexer::TokenKind::CLOSE_BRACE},
+      {".", lexer::TokenKind::DOT},
+      {"..", lexer::TokenKind::DOT_DOT},
+      {":", lexer::TokenKind::COLON},
+      {";", lexer::TokenKind::SEMICOLON},
+      {",", lexer::TokenKind::COMMA},
+      {"=", lexer::TokenKind::ASSIGNMENT},
+      {"+=", lexer::TokenKind::PLUS_ASSIGNMENT},
+      {"-=", lexer::TokenKind::MINUS_ASSIGNMENT},
+      {"*=", lexer::TokenKind::STAR_ASSIGNMENT},
+      {"/=", lexer::TokenKind::SLASH_ASSIGNMENT},
+      {"%=", lexer::TokenKind::PERCENT_ASSIGNMENT},
+      {"==", lexer::TokenKind::EQUAL},
+      {"++", lexer::TokenKind::PLUS_PLUS},
+      {"--", lexer::TokenKind::MINUS_MINUS},
+      {"!", lexer::TokenKind::NOT},
+      {"!=", lexer::TokenKind::NOT_EQUAL},
+      {">", lexer::TokenKind::GREATER},
+      {">=", lexer::TokenKind::GREATER_EQUAL},
+      {"<", lexer::TokenKind::LESS},
+      {"<=", lexer::TokenKind::LESS_EQUAL},
+      {"&&", lexer::TokenKind::AND},
+      {"||", lexer::TokenKind::OR},
+      {"->", lexer::TokenKind::TYPE_ARROW},
+      {":>", lexer::TokenKind::LAMBDA_ARROW},
+      {"'", lexer::TokenKind::SINGLE_QUOTE},
+      {"\"", lexer::TokenKind::DOUBLE_QUOTE},
+      {"--", lexer::TokenKind::DASH_DASH},
+      {"\\", lexer::TokenKind::BACK_SLASH},
+      {"`", lexer::TokenKind::BACK_TICK},
   };
 
   std::unordered_map<std::string, lexer::TokenKind> reserved_keywords = {
@@ -134,6 +136,10 @@ namespace lexer {
       return "SLASH_ASSIGNMENT";
     case TokenKind::PERCENT_ASSIGNMENT:
       return "PERCENT_ASSIGNMENT";
+    case TokenKind::PLUS_PLUS:
+      return "PLUS_PLUS";
+    case TokenKind::MINUS_MINUS:
+      return "MINUS_MINUS";
     case TokenKind::OPEN_BRACE:
       return "OPEN_BRACE";
     case TokenKind::CLOSE_BRACE:
@@ -265,6 +271,10 @@ namespace lexer {
       return "/=";
     case TokenKind::PERCENT_ASSIGNMENT:
       return "%=";
+    case TokenKind::PLUS_PLUS:
+      return "++";
+    case TokenKind::MINUS_MINUS:
+      return "--";
     case TokenKind::OPEN_BRACE:
       return "[";
     case TokenKind::CLOSE_BRACE:
@@ -354,7 +364,7 @@ namespace lexer {
   }
 
   std::vector<lexer::Token> tokenize(std::string input) {
-    // [DEBUG**]  std::cout << "[Debug] Starting tokenization\n"; // Debug
+    /* [DEBUG**] */ std::cout << "[Debug] Starting tokenization\n"; // Debug
 
     // Strip UTF-8 BOM if present
     if (input.size() >= 3 &&
@@ -401,7 +411,30 @@ namespace lexer {
 
     auto handle_operator = [&](const std::string &op)
     {
-      // Create token BEFORE advancing position
+      if (op == "\"")
+      {
+        std::string str;
+        ++it;
+        col++;
+        while (it != end && *it != '"')
+        {
+          if (*it == '\\' && (it + 1) != end && (*(it + 1) == '"' || *(it + 1) == '\\'))
+          {
+            ++it;
+            col++;
+          }
+          str.push_back(*it);
+          ++it;
+          col++;
+        }
+        if (it != end)
+        {
+          ++it;
+          col++;
+        }
+        tokens.push_back(new_token(lexer::TokenKind::STRING, std::move(str), line, line, col - str.size() - 2, col));
+        return;
+      }
       tokens.push_back(new_token(ops[op], op, line, line, col, col + op.size()));
       col += op.size();
       it += op.size();
@@ -410,11 +443,32 @@ namespace lexer {
     while (it != end) {
       // Skip comment lines starting with `--`
       if (std::distance(it, end) > 1 && *it == '-' && *(it + 1) == '-') {
-        // [DEBUG**]  std::cout << "[Debug] Skipping comment line\n"; // Debug
+        /* [DEBUG**] */ std::cout << "[Debug] Skipping comment line\n"; // Debug
         // Skip until newline or end
         while (it != end && *it != '\n') {
           ++it;
           ++col;
+        }
+        continue;
+      }
+      else if (std::distance(it, end) > 1 && *it == '-' && *(it + 1) == '*')
+      {
+        /* [DEBUG**] */ std::cout << "[Debug] Skipping comment block\n"; // Debug
+        // Skip until end of block comment
+        while (it != end && !(*it == '*' && (it + 1) != end && *(it + 1) == '-'))
+        {
+          if (*it == '\n')
+          {
+            line++;
+            col = 0;
+          }
+          ++it;
+          ++col;
+        }
+        if (it != end)
+        {
+          it += 2;
+          col += 2;
         }
         continue;
       }
@@ -433,24 +487,21 @@ namespace lexer {
           break;
         default:
         {
-          // Check if it's an operator BEFORE checking for identifiers/numbers
           if ((it + 1 != end && ops.find(std::string(1, *it) + *(it + 1)) != ops.end()))
           {
-            // Two character operator
             std::string op = std::string(1, *it) + *(it + 1);
             handle_operator(op);
           }
           else if (ops.find(std::string(1, *it)) != ops.end())
           {
-            // Single character operator
             std::string op = std::string(1, *it);
             handle_operator(op);
           }
           else if (std::isdigit(*it))
           {
             std::string num;
-            while (it != end && (std::isdigit(*it) || *it == '.' || *it == '_')) {
-              // Break numeric parse if next char(s) form an operator like ".."
+            while (it != end && (std::isdigit(*it) || *it == '.' || *it == '_'))
+            {
               if (*it == '.' && (it + 1) != end && *(it + 1) == '.') {
                 break;
               }
@@ -458,7 +509,7 @@ namespace lexer {
               ++it; col++;
             }
             tokens.push_back(new_token(lexer::TokenKind::NUMBER, std::move(num), line, line, col - num.size(), col));
-            // [DEBUG**]  std::cout << "[Debug] Token created: NUMBER(" << num << ")\n"; // Debug
+            /* [DEBUG**] */ std::cout << "[Debug] Token created: NUMBER(" << num << ")\n"; // Debug
           }
           else if (std::isalpha(*it))
           {
@@ -478,13 +529,13 @@ namespace lexer {
             if (reserved_keywords.find(lower) != reserved_keywords.end()) {
               tokens.push_back(new_token(reserved_keywords[lower],
                                          std::move(value), line, line, col - value.size(), col));
-              // [DEBUG**]  std::cout << "[Debug] Token created: " << token_kind_to_string(reserved_keywords[lower]) << "(" << value << ")\n"; // Debug
+              /* [DEBUG**] */ std::cout << "[Debug] Token created: " << token_kind_to_string(reserved_keywords[lower]) << "(" << value << ")\n"; // Debug
             }
             else
             {
               tokens.push_back(new_token(lexer::TokenKind::IDENTIFIER,
                                          std::move(value), line, line, col - value.size(), col));
-              // [DEBUG**]  std::cout << "[Debug] Token created: IDENTIFIER(" << value << ")\n"; // Debug
+              /* [DEBUG**] */ std::cout << "[Debug] Token created: IDENTIFIER(" << value << ")\n"; // Debug
             }
           }
           else
@@ -502,7 +553,7 @@ namespace lexer {
       }
     }
     tokens.push_back(new_token(lexer::TokenKind::EOF_, "", line, line, col, col));
-    // [DEBUG**]  std::cout << "[Debug] Tokenization completed. Total tokens: " << tokens.size() << "\n"; // Debug
+    /* [DEBUG**] */ std::cout << "[Debug] Tokenization completed. Total tokens: " << tokens.size() << "\n"; // Debug
     return tokens;
   }
 }

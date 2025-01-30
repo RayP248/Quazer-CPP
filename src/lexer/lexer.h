@@ -43,6 +43,8 @@ namespace lexer {
     STAR_ASSIGNMENT,    // *=
     SLASH_ASSIGNMENT,   // /=
     PERCENT_ASSIGNMENT, // %=
+    PLUS_PLUS,          // ++
+    MINUS_MINUS,        // --
 
     // Grouping
     OPEN_PAREN,  // (

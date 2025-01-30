@@ -64,7 +64,7 @@ namespace interpreter
       value = nullptr;
       type = "null";
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created null_value\n"; // Debug
+      /* [DEBUG**] */ std::cout << "[Debug] Created null_value\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -87,7 +87,7 @@ namespace interpreter
     dummy_value()
     {
       type = "dummy";
-      // [DEBUG**] std::cout << "[Debug] Created dummy_value\n"; // Debug
+      /* [DEBUG**] */ std::cout << "[Debug] Created dummy_value\n"; // Debug
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -103,7 +103,7 @@ namespace interpreter
       type = "number"; // Make sure type is set
       value = val;
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created number_value: " << value << "\n"; // Debug
+      /* [DEBUG**] */ std::cout << "[Debug] Created number_value: " << value << "\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -129,7 +129,7 @@ namespace interpreter
       value = std::move(val);
       type = "string";
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created string_value: " << value << "\n"; // Debug
+      /* [DEBUG**] */ std::cout << "[Debug] Created string_value: " << value << "\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -155,7 +155,7 @@ namespace interpreter
       value = val;
       type = "boolean";
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created boolean_value: " << (value ? "true" : "false") << "\n"; // Debug
+      /* [DEBUG**] */ std::cout << "[Debug] Created boolean_value: " << (value ? "true" : "false") << "\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -345,6 +345,7 @@ namespace interpreter
   std::unique_ptr<runtime_value> interpret_variable_declaration_statement(ast::VariableDeclarationStatement *statement, interpreter::Environment *env, bool is_returned);
   std::unique_ptr<runtime_value> interpret_return_statement(ast::ReturnStatement *statement, interpreter::Environment *env);
   std::unique_ptr<runtime_value> interpret_function_declaration_statement(ast::FunctionDeclarationStatement *statement, interpreter::Environment *env, bool is_returned);
+  std::unique_ptr<runtime_value> interpret_if_statement(ast::IfStatement *statement, interpreter::Environment *env, bool is_returned);
 
   //*-------------------
   //*    EXPRESSIONS

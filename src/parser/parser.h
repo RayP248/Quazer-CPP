@@ -98,6 +98,8 @@ namespace parser
   ast::Statement *parse_function_declaration_statement(parser_ &parser);
   ast::Statement *parse_block_statement(parser_ &parser);
   ast::Statement *parse_return_statement(parser_ &parser);
+  ast::Statement *parse_if_statement(parser_ &parser);
+  ast::Statement *parse_for_loop_statement(parser_ &parser);
 
   //*-------------------
   //*    EXPRESSIONS
@@ -106,6 +108,8 @@ namespace parser
   ast::Expression *parse_primary_expression(parser::parser_ &parser);
   ast::Expression *parse_binary_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
   ast::Expression *parse_call_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
+  ast::Expression *parse_assignment_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
+  ast::Expression *parse_variable_declaration_expression(parser_ &parser);
 
   //*---------------
   //*    HELPERS

@@ -22,6 +22,8 @@ namespace ast
       return "FunctionDeclarationStatement";
     case IF_STATEMENT:
       return "IfStatement";
+    case FOR_LOOP_STATEMENT:
+      return "ForLoopStatement";
     case NUMBER_EXPRESSION:
       return "NumberExpression";
     case SYMBOL_EXPRESSION:
@@ -32,6 +34,10 @@ namespace ast
       return "BinaryExpression";
     case CALL_EXPRESSION:
       return "CallExpression";
+    case ASSIGNMENT_EXPRESSION:
+      return "AssignmentExpression";
+    case VARIABLE_DECLARATION_EXPRESSION:
+      return "VariableDeclarationExpression";
     case DUMMY_EXPRESSION:
       return "DummyExpression";
     default:
