@@ -43,6 +43,8 @@ namespace error
     void highlightLine(const std::string &line);
     void highlightErrorLocation(int columnstart, int columnend);
   };
+
+  void display_all_errors(bool terminate);
 }
 
 #endif // ERROR_H

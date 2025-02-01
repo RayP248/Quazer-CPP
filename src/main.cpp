@@ -327,15 +327,7 @@ int main(int argc, char **argv)
 
   std::string input((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
   auto tokens = lexer::tokenize(input);
-  if (global::errors.size() > 0)
-  {
-    std::cout << "Errors:\n";
-    for (auto &err : global::errors)
-    {
-      err.print(&global::errors.front() == &err, &global::errors.back() == &err);
-    }
-    // Continue execution even if there are errors
-  }
+  error::display_all_errors(false);
   std::cout << "Tokens:\n";
   for (const auto &token : tokens)
   {
@@ -343,15 +335,7 @@ int main(int argc, char **argv)
   }
   std::cout << "------------------------------------\n";
   auto program = parser::parse(tokens);
-  if (global::errors.size() > 0)
-  {
-    std::cout << "Errors:\n";
-    for (auto &err : global::errors)
-    {
-      err.print(&global::errors[0] == &err, &global::errors[global::errors.size() - 1] == &err);
-    }
-    exit(1);
-  }
+  error::display_all_errors(true);
   std::cout << "Finished Parsing\n";
   std::string output = print_AST(&program);
   std::cout << "AST:\n";
@@ -372,6 +356,7 @@ int main(int argc, char **argv)
   std::cout << "Interpreting program\n";
   ast::ASTVariant variant_program = &program;
   auto result = interpreter::interpret(&variant_program, env, false);
+  error::display_all_errors(true);
   std::cout << "Final Result: " << print_value(*result) << "\n";
   return 0;
 }

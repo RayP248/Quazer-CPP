@@ -56,10 +56,6 @@ namespace error
       : code(code), message(message), linestart(linestart), lineend(lineend), columnstart(columnstart), columnend(columnend), origin(origin), importance(importance)
   {
     global::errors.push_back(*this);
-    if (importance == ErrorImportance::CRITICAL)
-    {
-      this->print(true, true);
-    }
   }
 
   void Error::print(bool first, bool last)
@@ -109,7 +105,7 @@ namespace error
 
   void Error::highlightErrorLocation(int columnstart, int columnend)
   {
-    std::cout << " |        ";
+    std::cout << " |         ";
     for (int i = 0; i < columnstart; ++i)
     {
       std::cout << " ";
@@ -125,7 +121,7 @@ namespace error
     }
     else
     {
-      for (int i = columnstart; i <= columnend; ++i)
+      for (int i = columnstart + 1; i <= columnend; ++i)
       {
         std::cout << "^";
       }
@@ -137,7 +133,7 @@ namespace error
   {
     // Updated regex to separate punctuation from alphanumerics
     static const std::regex tokenRegex(R"(\w+|[^\w\s]+|\s+)");
-    static const std::regex stringRegex(R"(^".*"$)");
+    static const std::regex stringRegex(R"(".*"$)");
     // Keywords excluding these new types
     static const std::regex keywordRegex(R"(\b(public|const|let|if|else|for|while|return|class|struct|fn|void)\b)");
     // Updated type regex
@@ -210,6 +206,19 @@ namespace error
 
       std::cout << token;
       resetColor();
+    }
+  }
+
+  void display_all_errors(bool terminate)
+  {
+    if (global::errors.size() > 0)
+    {
+      std::cout << global::errors.size() << " errors found:\n";
+      for (auto &err : global::errors)
+      {
+        err.print(&global::errors.front() == &err, &global::errors.back() == &err);
+      }
+      exit(1);
     }
   }
 }

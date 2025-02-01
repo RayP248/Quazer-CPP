@@ -16,16 +16,20 @@ fn fib (n: number) -> number {
   let b: number = 1;
   let c: number = 0;
 
-  -* for (let i = 1; i < n; i = i + 1) {
+  for (let i = 1; i < n; i++) {
     c = a + b;
     a = b;
     b = c;
-  } *-
+  }
 
   return c;
 }
-
--- println("fib up to 10:");
--* for (let i: number = 0; i < 10; i++) {
-  println("fib (", i, ") = ", fib(i));
-} *-
+out("fib up to 10:\n");
+for (let i: number = 0; i <= 10; i++) {
+  out("fib (", i, ") = ", fib(i), "\n");
+}
+out("------------------------\n");
+out("power up to 10:\n");
+for (let j: number = 0; j <= 10; j++) {
+  out("power (", j, ") = ", power(2, j), "\n");
+}
