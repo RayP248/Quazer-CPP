@@ -47,12 +47,12 @@ namespace lexer {
     MINUS_MINUS,        // --
 
     // Grouping
-    OPEN_PAREN,  // (
-    CLOSE_PAREN, // )
-    OPEN_BRACE,  // [
-    CLOSE_BRACE, // ]
-    OPEN_CURLY,  // {
-    CLOSE_CURLY, // }
+    OPEN_PAREN,   // (
+    CLOSE_PAREN,  // )
+    OPEN_SQUARE,  // [
+    CLOSE_SQUARE, // ]
+    OPEN_CURLY,   // {
+    CLOSE_CURLY,  // }
 
     // Symbols
     COLON,        // :
@@ -80,6 +80,7 @@ namespace lexer {
     OPERATOR,    // operator
     CREATE,      // create
     FOR,         // for
+    OF,          // of
     EXTEND,      // extend
     PROP,        // prop
     END,         // end

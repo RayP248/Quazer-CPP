@@ -188,7 +188,8 @@ namespace parser
     nud(lexer::TokenKind::NUMBER, parse_primary_expression);
     nud(lexer::TokenKind::STRING, parse_primary_expression);
     nud(lexer::TokenKind::IDENTIFIER, parse_primary_expression);
-    led(lexer::TokenKind::IDENTIFIER, DEFAULT, parse_binary_expression); // Add this line
+    nud(lexer::TokenKind::OPEN_SQUARE, parse_primary_expression);
+    led(lexer::TokenKind::IDENTIFIER, DEFAULT, parse_binary_expression);
 
     // Parentheses
     nud(lexer::TokenKind::OPEN_PAREN, [](parser_ &parser)
@@ -201,6 +202,7 @@ namespace parser
 
     // Statement Expressions
     nud(lexer::TokenKind::LET, parse_variable_declaration_expression);
+    nud(lexer::TokenKind::CONST, parse_variable_declaration_expression);
 
     // Statements
     statement(lexer::TokenKind::LET, parse_variable_declaration_statement);
@@ -544,14 +546,25 @@ namespace parser
     {
       for_stmt->initializer = parse_expression(parser, DEFAULT);
     }
-    if (parser.current_kind() != lexer::TokenKind::SEMICOLON)
+    if (parser.current_kind() != lexer::TokenKind::OF)
     {
-      for_stmt->condition = parse_expression(parser, DEFAULT);
+      parser.expect(lexer::TokenKind::SEMICOLON, "parser.cpp : parse_for_statement() : Expected ';' after for loop initializer");
+      if (parser.current_kind() != lexer::TokenKind::SEMICOLON)
+      {
+        for_stmt->condition = parse_expression(parser, DEFAULT);
+      }
+      parser.expect(lexer::TokenKind::SEMICOLON, "parser.cpp : parse_for_statement() : Expected ';' after for loop condition");
+      if (parser.current_kind() != lexer::TokenKind::CLOSE_PAREN)
+      {
+        for_stmt->post = parse_expression(parser, DEFAULT);
+      }
     }
-    parser.expect(lexer::TokenKind::SEMICOLON, "parser.cpp : parse_for_statement() : Expected ';' after for loop condition");
-    if (parser.current_kind() != lexer::TokenKind::CLOSE_PAREN)
+    else
     {
-      for_stmt->post = parse_expression(parser, DEFAULT);
+      parser.advance();
+      for_stmt->array_of = parse_expression(parser, DEFAULT);
+      for_stmt->condition = nullptr;
+      for_stmt->post = nullptr;
     }
     parser.expect(lexer::TokenKind::CLOSE_PAREN, "parser.cpp : parse_for_statement() : Expected ')' after for loop post-expression");
 
@@ -680,6 +693,27 @@ namespace parser
       identifier->kind = ast::StatementKind::SYMBOL_EXPRESSION;
       parser.advance();
       return identifier;
+    }
+    case lexer::TokenKind::OPEN_SQUARE:
+    {
+      ast::ArrayExpression *array = new ast::ArrayExpression();
+      array->linestart = parser.current_token().linestart;
+      array->lineend = parser.current_token().lineend;
+      array->columnstart = parser.current_token().columnstart;
+      array->columnend = parser.current_token().columnend;
+      array->kind = ast::StatementKind::ARRAY_EXPRESSION;
+      parser.advance();
+      while (parser.current_kind() != lexer::TokenKind::CLOSE_SQUARE)
+      {
+        if (parser.current_kind() == lexer::TokenKind::COMMA)
+        {
+          parser.advance();
+          continue;
+        }
+        array->elements.push_back(parse_expression(parser, DEFAULT));
+      }
+      parser.expect(lexer::TokenKind::CLOSE_SQUARE, "parser.cpp : parse_primary_expression() : Expected ']' to close array expression");
+      return array;
     }
     default:
     {
@@ -823,23 +857,6 @@ namespace parser
       parser.advance();
       value = parse_expression(parser, ASSIGNMENT);
     }
-    lexer::Token semicolon = parser.expect(
-        lexer::TokenKind::SEMICOLON,
-        "parser.cpp : parse_variable_declaration_expression() : Expected ';' after variable declaration");
-
-    if (is_const && value == nullptr)
-    {
-      error::Error err(
-          error::ErrorCode::PARSER_ERROR,
-          "Constant ('const') variable declaration requires an assignment.",
-          keyword.linestart,
-          keyword.lineend,
-          keyword.columnstart,
-          keyword.columnend,
-          "parser.cpp : parse_variable_declaration_expression()",
-          error::ErrorImportance::HIGH);
-      return new ast::DummyExpression();
-    }
 
     var_decl->kind = ast::StatementKind::VARIABLE_DECLARATION_EXPRESSION;
     var_decl->name = identifier.value;
@@ -848,9 +865,9 @@ namespace parser
     var_decl->is_const = is_const;
     var_decl->is_public = is_public;
     var_decl->linestart = keyword.linestart;
-    var_decl->lineend = semicolon.lineend;
+    var_decl->lineend = value != nullptr ? value->lineend : identifier.lineend;
     var_decl->columnstart = keyword.columnstart;
-    var_decl->columnend = semicolon.columnend;
+    var_decl->columnend = value != nullptr ? value->columnend : identifier.columnend;
 
     return var_decl;
   }

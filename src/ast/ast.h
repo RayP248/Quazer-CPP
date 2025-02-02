@@ -27,6 +27,7 @@ namespace ast
     CALL_EXPRESSION,
     ASSIGNMENT_EXPRESSION,
     VARIABLE_DECLARATION_EXPRESSION,
+    ARRAY_EXPRESSION,
     DUMMY_EXPRESSION,
   };
 
@@ -191,6 +192,22 @@ namespace ast
     }
   };
 
+  struct ArrayExpression : public Expression
+  {
+    std::vector<Expression *> elements;
+    ArrayExpression()
+    {
+      kind = StatementKind::EXPRESSION_STATEMENT;
+    }
+    ~ArrayExpression() override
+    {
+      for (auto &element : elements)
+      {
+        delete element;
+      }
+    }
+  };
+
   //*-------------------
   //*    STATEMENTS
   //*-------------------
@@ -306,7 +323,9 @@ namespace ast
     Expression *initializer;
     Expression *condition;
     Expression *post;
+    Expression *array_of;
     BlockStatement *body;
+
     ForLoopStatement()
     {
       kind = StatementKind::FOR_LOOP_STATEMENT;
@@ -316,6 +335,7 @@ namespace ast
       delete initializer;
       delete condition;
       delete post;
+      delete array_of;
       delete body;
     }
   };

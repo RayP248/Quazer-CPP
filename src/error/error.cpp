@@ -133,9 +133,9 @@ namespace error
   {
     // Updated regex to separate punctuation from alphanumerics
     static const std::regex tokenRegex(R"(\w+|[^\w\s]+|\s+)");
-    static const std::regex stringRegex(R"(".*"$)");
+    static const std::regex stringRegex(R"(".*$")");
     // Keywords excluding these new types
-    static const std::regex keywordRegex(R"(\b(public|const|let|if|else|for|while|return|class|struct|fn|void)\b)");
+    static const std::regex keywordRegex(R"(\b(public|const|let|if|else|for|while|return|class|struct|fn|void|of)\b)");
     // Updated type regex
     static const std::regex typeRegex(R"(\b(number|string|array)\b)");
     static const std::regex numberRegex(R"(^\d+(\.\d+)?$)");

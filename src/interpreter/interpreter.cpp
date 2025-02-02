@@ -24,7 +24,6 @@ namespace interpreter
       // [DEBUG**] std::cout << "[interpret] Null statement received\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
-
     // Convert all AST nodes to Statement*:
     ast::Statement *node = std::visit([](auto &&arg) -> ast::Statement *
                                       { return static_cast<ast::Statement *>(arg); }, *statement);
@@ -70,6 +69,18 @@ namespace interpreter
         return val->clone();
       }
       return std::make_unique<null_value>();
+    }
+    case ast::StatementKind::ARRAY_EXPRESSION:
+    {
+      auto arr_node = dynamic_cast<ast::ArrayExpression *>(node);
+      // [DEBUG**] std::cout << "[interpret] Interpreting array expression\n";
+      std::vector<std::unique_ptr<runtime_value>> elements;
+      for (auto *expr : arr_node->elements)
+      {
+        ast::ASTVariant variant = expr;
+        elements.push_back(interpret(&variant, env, is_returned));
+      }
+      return std::make_unique<array_value>(std::move(elements), is_returned);
     }
     case ast::StatementKind::STRING_EXPRESSION:
     {
@@ -208,6 +219,27 @@ namespace interpreter
     return it->second.get();
   }
 
+  runtime_value *Environment::delete_variable(std::string name, ast::Statement *error_expression)
+  {
+    // [DEBUG**] std::cout << "[delete_variable] Deleting variable: " << name << "\n";
+    Environment *env = Environment::resolve(name, error_expression);
+    auto it = env->variables.find(name);
+    if (it == env->variables.end())
+    {
+      error::Error err(
+          error::ErrorCode::RUNTIME_ERROR,
+          "Variable '" + name + "' not found.",
+          error_expression->linestart,
+          error_expression->lineend,
+          error_expression->columnstart,
+          error_expression->columnend,
+          "interpreter.cpp : Environment::delete_variable : if",
+          error::ErrorImportance::MODERATE);
+    }
+    env->variables.erase(it);
+    return std::make_unique<null_value>().get();
+  }
+
   Environment *Environment::resolve(std::string name, ast::Statement *error_expression)
   {
     // [DEBUG**] std::cout << "[resolve] Resolving variable: " << name << "\n";
@@ -269,7 +301,33 @@ namespace interpreter
           return std::make_unique<null_value>(false);
         });
 
+    auto outln_fn = std::make_unique<native_function_value>(
+        "outln",
+        [](const std::vector<std::unique_ptr<runtime_value>> &args) -> std::unique_ptr<runtime_value>
+        {
+          for (const auto &arg : args)
+          {
+            std::string s = arg->to_string();
+            for (size_t i = 0; i < s.size(); ++i)
+            {
+              if (s[i] == '\\' && i + 1 < s.size() && s[i + 1] == 'n')
+              {
+                std::cout << "\n";
+                i++;
+              }
+              else
+              {
+                std::cout << s[i];
+              }
+            }
+          }
+          std::cout << "\n";
+          std::cout << std::flush;
+          return std::make_unique<null_value>(false);
+        });
+
     global_env->declare_variable("out", std::move(out_fn), new ast::Type("native_function"), nullptr, true, false);
+    global_env->declare_variable("outln", std::move(outln_fn), new ast::Type("native_function"), nullptr, true, false);
     return global_env;
   }
 
@@ -394,54 +452,118 @@ namespace interpreter
   {
     // [DEBUG**] std::cout << "[interpret_for_loop_statement] Interpreting for loop statement\n";
     auto for_loop = dynamic_cast<ast::ForLoopStatement *>(statement);
-    if (for_loop->initializer)
+    if (for_loop->array_of == nullptr)
     {
-      // [DEBUG**] std::cout << "[interpret_for_loop_statement] Found initializer\n";
-      ast::ASTVariant init_variant = for_loop->initializer;
-      interpret(&init_variant, env, false);
+      // [DEBUG**] std::cout << "[interpret_for_loop_statement] Found for loop with initializer\n";
+      if (for_loop->initializer)
+      {
+        // [DEBUG**] std::cout << "[interpret_for_loop_statement] Found initializer\n";
+        ast::ASTVariant init_variant = for_loop->initializer;
+        interpret(&init_variant, env, false);
+      }
+      else
+      {
+        // [DEBUG**] std::cout << "[interpret_for_loop_statement] No initializer found\n";
+      }
+      int num_iterations = 0;
+      while (true)
+      {
+        if (for_loop->condition)
+        {
+          ast::ASTVariant cond_variant = for_loop->condition;
+          auto cond_val = interpret(&cond_variant, env, false);
+          if (auto cond_bool = dynamic_cast<boolean_value *>(cond_val.get()))
+          {
+            if (!cond_bool->value)
+            {
+              break;
+            }
+          }
+        }
+        else
+        {
+          break;
+        }
+        if (for_loop->body)
+        {
+          ast::ASTVariant body_variant = for_loop->body;
+          std::unique_ptr<runtime_value> result = interpret(&body_variant, env, false);
+          if (result->returned_value)
+          {
+            return result;
+          }
+        }
+        if (for_loop->post)
+        {
+          ast::ASTVariant update_variant = for_loop->post;
+          interpret(&update_variant, env, false);
+        }
+        num_iterations++;
+        if (num_iterations > 10000)
+        {
+          std::cerr << "Error: Infinite loop detected in for loop.\n";
+          exit(1);
+        }
+      }
     }
     else
     {
-      // [DEBUG**] std::cout << "[interpret_for_loop_statement] No initializer found\n";
-    }
-    int num_iterations = 0;
-    while (true)
-    {
-      if (for_loop->condition)
+      if (auto array_sym = dynamic_cast<ast::SymbolExpression *>(for_loop->array_of))
       {
-        ast::ASTVariant cond_variant = for_loop->condition;
-        auto cond_val = interpret(&cond_variant, env, false);
-        if (auto cond_bool = dynamic_cast<boolean_value *>(cond_val.get()))
+        runtime_value *arr_var = env->lookup_variable(array_sym->value, for_loop->array_of);
+        if (auto arr = dynamic_cast<array_value *>(arr_var))
         {
-          if (!cond_bool->value)
+          auto var_decl_expr = dynamic_cast<ast::VariableDeclarationExpression *>(for_loop->initializer);
+          if (var_decl_expr)
           {
-            break;
+            std::string var_name = var_decl_expr->name;
+            for (size_t i = 0; i < arr->elements.size(); i++)
+            {
+              env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
+              if (for_loop->body)
+              {
+                ast::ASTVariant body_variant = for_loop->body;
+                auto result = interpret(&body_variant, env, false);
+                if (result->returned_value)
+                {
+                  return result;
+                }
+              }
+              runtime_value *updated = env->lookup_variable(var_name, for_loop->initializer);
+              arr->elements[i] = updated->clone();
+              env->delete_variable(var_name, for_loop->initializer);
+            }
           }
         }
       }
       else
       {
-        break;
-      }
-      if (for_loop->body)
-      {
-        ast::ASTVariant body_variant = for_loop->body;
-        std::unique_ptr<runtime_value> result = interpret(&body_variant, env, false);
-        if (result->returned_value)
+        ast::ASTVariant arr_variant = for_loop->array_of;
+        auto arr_val = interpret(&arr_variant, env, false);
+        if (auto arr = dynamic_cast<array_value *>(arr_val.get()))
         {
-          return result;
+          auto var_decl_expr = dynamic_cast<ast::VariableDeclarationExpression *>(for_loop->initializer);
+          if (var_decl_expr)
+          {
+            std::string var_name = var_decl_expr->name;
+            for (size_t i = 0; i < arr->elements.size(); i++)
+            {
+              env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
+              if (for_loop->body)
+              {
+                ast::ASTVariant body_variant = for_loop->body;
+                auto result = interpret(&body_variant, env, false);
+                if (result->returned_value)
+                {
+                  return result;
+                }
+              }
+              runtime_value *updated = env->lookup_variable(var_name, for_loop->initializer);
+              arr->elements[i] = updated->clone();
+              env->delete_variable(var_name, for_loop->initializer);
+            }
+          }
         }
-      }
-      if (for_loop->post)
-      {
-        ast::ASTVariant update_variant = for_loop->post;
-        interpret(&update_variant, env, false);
-      }
-      num_iterations++;
-      if (num_iterations > 10000)
-      {
-        std::cerr << "Error: Infinite loop detected in for loop.\n";
-        exit(1);
       }
     }
     return std::make_unique<null_value>(false);

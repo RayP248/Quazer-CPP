@@ -48,6 +48,7 @@ namespace interpreter
     std::unique_ptr<runtime_value> declare_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Type *explicit_type, ast::Statement *error_expression = nullptr, bool is_constant = false, bool is_public = false);
     std::unique_ptr<runtime_value> assign_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Statement *error_expression);
     runtime_value *lookup_variable(std::string name, ast::Statement *error_expression);
+    runtime_value *delete_variable(std::string name, ast::Statement *error_expression);
     Environment *resolve(std::string name, ast::Statement *error_expression);
   };
   Environment *create_global_environment();
@@ -172,58 +173,6 @@ namespace interpreter
       return std::make_unique<boolean_value>(*this);
     }
   };
-  /*
-    struct type_value : runtime_value {
-      std::string name;
-      std::vector<ast::Type> generics;
-      std::vector<ast::Type> fields;
-      bool is_inferred = false;
-      type_value(std::string name)
-      {
-        this->name = name;
-        type = "type";
-      }
-      std::string to_string() const override
-      {
-        return name;
-      }
-      type_value(const type_value &other)
-      {
-        name = other.name;
-        type = other.type;
-        generics = other.generics;
-        fields = other.fields;
-      }
-      std::unique_ptr<runtime_value> clone() const override
-      {
-        return std::make_unique<type_value>(*this);
-      }
-    };
-
-    struct parameter_value : runtime_value
-    {
-      std::string name;
-      type_value *type;
-      parameter_value(std::string name)
-      {
-        this->name = name;
-        type = new type_value("any");
-      }
-      std::string to_string() const override
-      {
-        return name;
-      }
-      parameter_value(const parameter_value &other)
-      {
-        name = other.name;
-        type = other.type;
-      }
-      std::unique_ptr<runtime_value> clone() const override
-      {
-        return std::make_unique<parameter_value>(*this);
-      }
-    };
-  */
 
   struct function_value : runtime_value
   {
@@ -331,7 +280,63 @@ namespace interpreter
       return std::make_unique<native_function_value>(*this);
     }
   };
-
+  struct array_value : runtime_value
+  {
+    std::vector<std::unique_ptr<runtime_value>> elements;
+    array_value(std::vector<std::unique_ptr<runtime_value>> elements, bool is_returned = false)
+    {
+      this->elements = std::move(elements);
+      returned_value = is_returned;
+      std::vector<std::string> types;
+      for (const auto &element : this->elements)
+      {
+        types.push_back(element->type);
+      }
+      std::string type = "array<";
+      std::unordered_set<std::string> uniqueTypes(types.begin(), types.end());
+      bool first = true;
+      for (const auto &t : uniqueTypes)
+      {
+        if (!first)
+        {
+          type += ", ";
+        }
+        type += t;
+        first = false;
+      }
+      type += ">";
+      this->type = type;
+    }
+    std::string to_string() const override
+    {
+      std::string str = "[";
+      for (size_t i = 0; i < elements.size(); i++)
+      {
+        str += elements[i]->to_string();
+        if (i + 1 < elements.size())
+        {
+          str += ", ";
+        }
+      }
+      str += "]";
+      return str;
+    }
+    array_value(const array_value &other)
+    {
+      for (const auto &element : other.elements)
+      {
+        elements.push_back(element->clone());
+      }
+      type = other.type;
+    }
+    ~array_value()
+    {
+    }
+    std::unique_ptr<runtime_value> clone() const override
+    {
+      return std::make_unique<array_value>(*this);
+    }
+  };
   //*------------------
   //*    STATEMENTS
   //*------------------

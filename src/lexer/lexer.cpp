@@ -18,8 +18,8 @@ namespace lexer {
       {")", lexer::TokenKind::CLOSE_PAREN},
       {"{", lexer::TokenKind::OPEN_CURLY},
       {"}", lexer::TokenKind::CLOSE_CURLY},
-      {"[", lexer::TokenKind::OPEN_BRACE},
-      {"]", lexer::TokenKind::CLOSE_BRACE},
+      {"[", lexer::TokenKind::OPEN_SQUARE},
+      {"]", lexer::TokenKind::CLOSE_SQUARE},
       {".", lexer::TokenKind::DOT},
       {"..", lexer::TokenKind::DOT_DOT},
       {":", lexer::TokenKind::COLON},
@@ -68,6 +68,7 @@ namespace lexer {
       {"operator", lexer::TokenKind::OPERATOR},
       {"create", lexer::TokenKind::CREATE},
       {"for", lexer::TokenKind::FOR},
+      {"of", lexer::TokenKind::OF},
       {"extend", lexer::TokenKind::EXTEND},
       {"prop", lexer::TokenKind::PROP},
       {"end", lexer::TokenKind::END},
@@ -140,9 +141,9 @@ namespace lexer {
       return "PLUS_PLUS";
     case TokenKind::MINUS_MINUS:
       return "MINUS_MINUS";
-    case TokenKind::OPEN_BRACE:
+    case TokenKind::OPEN_SQUARE:
       return "OPEN_BRACE";
-    case TokenKind::CLOSE_BRACE:
+    case TokenKind::CLOSE_SQUARE:
       return "CLOSE_BRACE";
     case TokenKind::OPEN_CURLY:
       return "OPEN_CURLY";
@@ -188,6 +189,8 @@ namespace lexer {
       return "ELSE";
     case TokenKind::FOR:
       return "FOR";
+    case TokenKind::OF:
+      return "OF";
     case TokenKind::THEN:
       return "THEN";
     case TokenKind::CLASS:
@@ -275,9 +278,9 @@ namespace lexer {
       return "++";
     case TokenKind::MINUS_MINUS:
       return "--";
-    case TokenKind::OPEN_BRACE:
+    case TokenKind::OPEN_SQUARE:
       return "[";
-    case TokenKind::CLOSE_BRACE:
+    case TokenKind::CLOSE_SQUARE:
       return "]";
     case TokenKind::OPEN_CURLY:
       return "{";
@@ -323,6 +326,8 @@ namespace lexer {
       return "else";
     case TokenKind::FOR:
       return "for";
+    case TokenKind::OF:
+      return "of";
     case TokenKind::THEN:
       return "then";
     case TokenKind::CLASS:

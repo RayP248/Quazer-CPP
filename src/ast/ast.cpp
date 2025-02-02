@@ -38,6 +38,8 @@ namespace ast
       return "AssignmentExpression";
     case VARIABLE_DECLARATION_EXPRESSION:
       return "VariableDeclarationExpression";
+    case ARRAY_EXPRESSION:
+      return "ArrayExpression";
     case DUMMY_EXPRESSION:
       return "DummyExpression";
     default:
