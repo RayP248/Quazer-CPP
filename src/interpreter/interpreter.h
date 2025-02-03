@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
 #include <variant>
 #include <memory>
 #include <functional>
@@ -337,6 +338,45 @@ namespace interpreter
       return std::make_unique<array_value>(*this);
     }
   };
+  struct object_value : runtime_value
+  {
+    std::map<std::string, std::unique_ptr<runtime_value>> properties;
+    object_value(std::map<std::string, std::unique_ptr<runtime_value>> properties, bool is_returned = false)
+    {
+      this->properties = std::move(properties);
+      returned_value = is_returned;
+      type = "object";
+    }
+    std::string to_string() const override
+    {
+      std::string str = "{";
+      for (auto it = properties.begin(); it != properties.end(); ++it)
+      {
+        str += it->first + ": " + it->second->to_string();
+        if (std::next(it) != properties.end())
+        {
+          str += ", ";
+        }
+      }
+      str += "}";
+      return str;
+    }
+    object_value(const object_value &other)
+    {
+      for (const auto &pair : other.properties)
+      {
+        properties[pair.first] = pair.second->clone();
+      }
+      type = other.type;
+    }
+    ~object_value()
+    {
+    }
+    std::unique_ptr<runtime_value> clone() const override
+    {
+      return std::make_unique<object_value>(*this);
+    }
+  };
   //*------------------
   //*    STATEMENTS
   //*------------------
@@ -357,6 +397,7 @@ namespace interpreter
   std::unique_ptr<runtime_value> interpret_call_expression(ast::CallExpression *expression, interpreter::Environment *env, bool is_returned);
   std::unique_ptr<runtime_value> interpret_variable_declaration_expression(ast::VariableDeclarationExpression *expression, interpreter::Environment *env, bool is_returned);
   std::unique_ptr<runtime_value> interpret_assignment_expression(ast::AssignmentExpression *expresssion, interpreter::Environment *env, bool is_returned);
+  std::unique_ptr<runtime_value> interpret_member_expression(ast::MemberExpression *expression, interpreter::Environment *env, bool is_returned);
 
   //*-------------------
   //*    MISC

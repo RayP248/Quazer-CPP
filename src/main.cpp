@@ -90,6 +90,7 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
     };
 
     std::function<std::string(const ast::Type *, int)> printType;
+    std::function<std::string(const std::pair<ast::Expression *, ast::Expression *>, int)> printProp;
     std::function<std::string(const ast::Statement *, int)> printStmt;
     std::function<std::string(const ast::Expression *, int)> printExpr;
 
@@ -122,6 +123,21 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       fields_str += "]";
       result += indentFunc(level + 2) + "is_inferred: " + std::to_string(node->is_inferred) + ",\n";
       result += indentFunc(level) + "}";
+      return result;
+    };
+
+    printProp = [&](const std::pair<ast::Expression *, ast::Expression *> node, int level) -> std::string
+    {
+      if (node.first == nullptr || node.second == nullptr)
+      {
+        return "";
+      }
+
+      std::string result;
+      result += indentFunc(level) + "Property {\n";
+      result += indentFunc(level + 2) + "key:\n" + printExpr(node.first, level + 4) + ",\n";
+      result += indentFunc(level + 2) + "value:\n" + printExpr(node.second, level + 4);
+      result += "\n" + indentFunc(level) + "}";
       return result;
     };
 
@@ -202,6 +218,33 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
         result += indentFunc(level + 2) + "},\n";
         result += indentFunc(level + 2) + "right:\n" + printExpr(assignmentExpr->right, level + 4) + ",\n";
         result += indentFunc(level + 2) + "increment_decrement: " + (assignmentExpr->increment_decrement ? "true" : "false");
+      }
+      else if (auto memberExpr = dynamic_cast<const ast::MemberExpression *>(node))
+      {
+        result += ",\n" + indentFunc(level + 2) + "object:\n" + printExpr(memberExpr->object, level + 4) + ",\n";
+        result += indentFunc(level + 2) + "property:\n" + printExpr(memberExpr->property, level + 4);
+      }
+      else if (auto arrayExpr = dynamic_cast<const ast::ArrayExpression *>(node))
+      {
+        result += "\n" + indentFunc(level + 2) + "elements: [\n";
+        for (size_t i = 0; i < arrayExpr->elements.size(); i++)
+        {
+          result += printExpr(arrayExpr->elements[i], level + 4);
+          if (i + 1 < arrayExpr->elements.size())
+            result += ",\n";
+        }
+        result += "\n" + indentFunc(level + 2) + "]";
+      }
+      else if (auto objectExpr = dynamic_cast<const ast::ObjectExpression *>(node))
+      {
+        result += "\n" + indentFunc(level + 2) + "properties: [\n";
+        for (size_t i = 0; i < objectExpr->properties.size(); i++)
+        {
+          result += printProp(objectExpr->properties[i], level + 4);
+          if (i + 1 < objectExpr->properties.size())
+            result += ",\n";
+        }
+        result += "\n" + indentFunc(level + 2) + "]";
       }
 
       result += "\n" + indentFunc(level) + "}";
@@ -321,8 +364,8 @@ int main(int argc, char **argv)
   global::currfile = argv[1];
   std::ifstream file(global::currfile);
   if (!file) {
-    std::cerr << "Unable to open file";
-    return 1;
+    std::cerr << "Unable to open file.";
+    exit(1);
   }
 
   std::string input((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -349,7 +392,7 @@ int main(int argc, char **argv)
   else
   {
     std::cerr << "Unable to open output file";
-    return 1;
+    exit(1);
   }
   std::cout << "Creating global env\n";
   auto env = interpreter::create_global_environment();
@@ -358,5 +401,5 @@ int main(int argc, char **argv)
   auto result = interpreter::interpret(&variant_program, env, false);
   error::display_all_errors(true);
   std::cout << "Final Result: " << print_value(*result) << "\n";
-  return 0;
+  exit(0);
 }

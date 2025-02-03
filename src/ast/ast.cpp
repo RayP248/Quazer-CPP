@@ -30,6 +30,10 @@ namespace ast
       return "SymbolExpression";
     case STRING_EXPRESSION:
       return "StringExpression";
+    case ARRAY_EXPRESSION:
+      return "ArrayExpression";
+    case OBJECT_EXPRESSION:
+      return "ObjectExpression";
     case BINARY_EXPRESSION:
       return "BinaryExpression";
     case CALL_EXPRESSION:
@@ -38,8 +42,8 @@ namespace ast
       return "AssignmentExpression";
     case VARIABLE_DECLARATION_EXPRESSION:
       return "VariableDeclarationExpression";
-    case ARRAY_EXPRESSION:
-      return "ArrayExpression";
+    case MEMBER_EXPRESSION:
+      return "MemberExpression";
     case DUMMY_EXPRESSION:
       return "DummyExpression";
     default:

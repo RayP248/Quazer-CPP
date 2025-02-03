@@ -70,6 +70,12 @@ namespace interpreter
       }
       return std::make_unique<null_value>();
     }
+    case ast::StatementKind::STRING_EXPRESSION:
+    {
+      auto str_node = dynamic_cast<ast::StringExpression *>(node);
+      // [DEBUG**] std::cout << "[interpret] Interpreting string: " << str_node->value << "\n";
+      return std::make_unique<string_value>(str_node->value, is_returned);
+    }
     case ast::StatementKind::ARRAY_EXPRESSION:
     {
       auto arr_node = dynamic_cast<ast::ArrayExpression *>(node);
@@ -82,11 +88,30 @@ namespace interpreter
       }
       return std::make_unique<array_value>(std::move(elements), is_returned);
     }
-    case ast::StatementKind::STRING_EXPRESSION:
+    case ast::StatementKind::OBJECT_EXPRESSION:
     {
-      auto str_node = dynamic_cast<ast::StringExpression *>(node);
-      // [DEBUG**] std::cout << "[interpret] Interpreting string: " << str_node->value << "\n";
-      return std::make_unique<string_value>(str_node->value, is_returned);
+      auto obj_node = dynamic_cast<ast::ObjectExpression *>(node);
+      // [DEBUG**] std::cout << "[interpret] Interpreting object expression\n";
+      std::map<std::string, std::unique_ptr<runtime_value>> properties;
+      for (auto &[key, value] : obj_node->properties)
+      {
+        std::string key_str;
+        if (auto str_expr = dynamic_cast<ast::StringExpression *>(key))
+        {
+          key_str = str_expr->value;
+        }
+        else if (auto sym_expr = dynamic_cast<ast::SymbolExpression *>(key))
+        {
+          key_str = sym_expr->value;
+        }
+        else
+        {
+          key_str = "";
+        }
+        ast::ASTVariant variant = value;
+        properties.emplace(key_str, interpret(&variant, env, is_returned));
+      }
+      return std::make_unique<object_value>(std::move(properties), is_returned);
     }
     case ast::StatementKind::BINARY_EXPRESSION:
     {
@@ -141,6 +166,12 @@ namespace interpreter
       auto assign_node = dynamic_cast<ast::AssignmentExpression *>(node);
       // [DEBUG**] std::cout << "[interpret] Interpreting assignment expression\n";
       return interpret_assignment_expression(assign_node, env, is_returned);
+    }
+    case ast::StatementKind::MEMBER_EXPRESSION:
+    {
+      auto mem_node = dynamic_cast<ast::MemberExpression *>(node);
+      // [DEBUG**] std::cout << "[interpret] Interpreting member expression\n";
+      return interpret_member_expression(mem_node, env, is_returned);
     }
     default:
       // [DEBUG**] std::cout << "[interpret] Unhandled statement kind: " << ast::statement_kind_to_string(node->kind) << "\n";
@@ -452,7 +483,8 @@ namespace interpreter
   {
     // [DEBUG**] std::cout << "[interpret_for_loop_statement] Interpreting for loop statement\n";
     auto for_loop = dynamic_cast<ast::ForLoopStatement *>(statement);
-    if (for_loop->array_of == nullptr)
+    // [DEBUG**] std::cout << "[interpret_for_loop_statement] For loop with array of: " << (for_loop->of_loop) << "\n";
+    if (for_loop->of_loop == false)
     {
       // [DEBUG**] std::cout << "[interpret_for_loop_statement] Found for loop with initializer\n";
       if (for_loop->initializer)
@@ -508,6 +540,7 @@ namespace interpreter
     }
     else
     {
+      // [DEBUG**] std::cout << "[interpret_for_loop_statement] Found for loop with array of\n";
       if (auto array_sym = dynamic_cast<ast::SymbolExpression *>(for_loop->array_of))
       {
         runtime_value *arr_var = env->lookup_variable(array_sym->value, for_loop->array_of);
@@ -794,6 +827,47 @@ namespace interpreter
       {
         // [DEBUG**] std::cout << "[interpet_assignment_expression] Assigning number: " << lnum->value << " to " << rnum->value << "\n";
         return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(assign->left)->value, std::make_unique<number_value>(rnum->value, is_returned), assign);
+      }
+    }
+    return std::make_unique<null_value>(is_returned);
+  }
+  std::unique_ptr<runtime_value> interpret_member_expression(ast::MemberExpression *expression, interpreter::Environment *env, bool is_returned)
+  {
+    // [DEBUG**] std::cout << "[interpret_member_expression] Interpreting member expression\n";
+    auto mem = dynamic_cast<ast::MemberExpression *>(expression);
+    if (!mem || !mem->object || !mem->property)
+    {
+      // [DEBUG**] std::cout << "[interpret_member_expression] Invalid member expression\n";
+      return std::make_unique<dummy_value>(); // replaced null_value
+    }
+
+    ast::ASTVariant obj_variant = mem->object;
+    auto obj = interpret(&obj_variant, env, false);
+    std::string property;
+    if (auto prop = dynamic_cast<ast::SymbolExpression *>(mem->property))
+    {
+      property = prop->value;
+    }
+    else if (auto prop = dynamic_cast<ast::StringExpression *>(mem->property))
+    {
+      property = prop->value;
+    }
+    else
+    {
+      // [DEBUG**] std::cout << "[interpret_member_expression] Invalid member expression\n";
+      return std::make_unique<dummy_value>(); // replaced null_value
+    }
+
+    if (auto obj_val = dynamic_cast<object_value *>(obj.get()))
+    {
+      auto it = obj_val->properties.find(property);
+      if (it != obj_val->properties.end())
+      {
+        return it->second->clone();
+      }
+      else
+      {
+        return std::make_unique<null_value>(is_returned);
       }
     }
     return std::make_unique<null_value>(is_returned);

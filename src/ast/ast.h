@@ -23,11 +23,13 @@ namespace ast
     NUMBER_EXPRESSION,
     SYMBOL_EXPRESSION,
     STRING_EXPRESSION,
+    ARRAY_EXPRESSION,
+    OBJECT_EXPRESSION,
     BINARY_EXPRESSION,
     CALL_EXPRESSION,
     ASSIGNMENT_EXPRESSION,
     VARIABLE_DECLARATION_EXPRESSION,
-    ARRAY_EXPRESSION,
+    MEMBER_EXPRESSION,
     DUMMY_EXPRESSION,
   };
 
@@ -114,6 +116,40 @@ namespace ast
     }
   };
 
+  struct ArrayExpression : public Expression
+  {
+    std::vector<Expression *> elements;
+    ArrayExpression()
+    {
+      kind = StatementKind::EXPRESSION_STATEMENT;
+    }
+    ~ArrayExpression() override
+    {
+      for (auto &element : elements)
+      {
+        delete element;
+      }
+    }
+  };
+
+  struct ObjectExpression : public Expression
+  {
+    std::vector<std::pair<Expression *, Expression *>> properties;
+    Expression *structure;
+    ObjectExpression()
+    {
+      kind = StatementKind::EXPRESSION_STATEMENT;
+    }
+    ~ObjectExpression() override
+    {
+      for (auto &prop : properties)
+      {
+        delete prop.first;
+        delete prop.second;
+      }
+    }
+  };
+
   struct DummyExpression : public Expression
   {
     DummyExpression()
@@ -192,19 +228,19 @@ namespace ast
     }
   };
 
-  struct ArrayExpression : public Expression
+  struct MemberExpression : public Expression
   {
-    std::vector<Expression *> elements;
-    ArrayExpression()
+    Expression *object = nullptr;
+    Expression *property = nullptr;
+    bool is_computed = false;
+    MemberExpression()
     {
       kind = StatementKind::EXPRESSION_STATEMENT;
     }
-    ~ArrayExpression() override
+    ~MemberExpression() override
     {
-      for (auto &element : elements)
-      {
-        delete element;
-      }
+      delete object;
+      delete property;
     }
   };
 
@@ -324,6 +360,7 @@ namespace ast
     Expression *condition;
     Expression *post;
     Expression *array_of;
+    bool of_loop = false;
     BlockStatement *body;
 
     ForLoopStatement()

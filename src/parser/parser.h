@@ -110,13 +110,15 @@ namespace parser
   ast::Expression *parse_call_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
   ast::Expression *parse_assignment_expression(parser::parser_ &parser, ast::Expression *left, parser::BindingPower binding_power);
   ast::Expression *parse_variable_declaration_expression(parser_ &parser);
+  ast::Expression *parse_object_expression(parser::parser_ &parser);
+  ast::Expression *parse_member_expression(parser::parser_ &parser, ast::Expression *left, BindingPower binding_power);
 
   //*---------------
   //*    HELPERS
   //*---------------
   std::vector<ast::Expression *> parse_args(parser_ &parser);
   std::vector<ast::ParameterExpression *> parse_parameters(parser_ &parser);
-  std::unordered_map<std::string, ast::Expression *> parse_properties(parser::parser_ &parser, lexer::Token &closecurly);
+  std::vector<std::pair<ast::Expression *, ast::Expression *>> parse_properties(parser_ &parser);
 }
 
 #endif // PARSER_H

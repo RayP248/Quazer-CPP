@@ -184,11 +184,16 @@ namespace parser
     led(lexer::TokenKind::PLUS_PLUS, BindingPower::ASSIGNMENT, parse_assignment_expression);
     led(lexer::TokenKind::MINUS_MINUS, BindingPower::ASSIGNMENT, parse_assignment_expression);
 
+    // Member
+    led(lexer::TokenKind::DOT, MEMBER, parse_member_expression);
+    led(lexer::TokenKind::OPEN_SQUARE, MEMBER, parse_member_expression);
+
     // Literals & Symbols
     nud(lexer::TokenKind::NUMBER, parse_primary_expression);
     nud(lexer::TokenKind::STRING, parse_primary_expression);
     nud(lexer::TokenKind::IDENTIFIER, parse_primary_expression);
     nud(lexer::TokenKind::OPEN_SQUARE, parse_primary_expression);
+    nud(lexer::TokenKind::OPEN_CURLY, parse_object_expression);
     led(lexer::TokenKind::IDENTIFIER, DEFAULT, parse_binary_expression);
 
     // Parentheses
@@ -213,9 +218,13 @@ namespace parser
     statement(lexer::TokenKind::IF, parse_if_statement);
     statement(lexer::TokenKind::FOR, parse_for_loop_statement);
 
-    // Add EOF to avoid uninitialized lookups
-    // Use BindingPower::DEFAULT or the lowest power
     binding_power_lu[lexer::TokenKind::EOF_] = new BindingPower(DEFAULT);
+
+    // So the parser doesn't complain when it sees '{' after an expression:
+    led(lexer::TokenKind::OPEN_CURLY, BindingPower::DEFAULT, [](parser_ &parser, ast::Expression *left, BindingPower)
+        {
+      // Ignore '{' as an infix operator; return left to avoid error.
+      return left ? left : new ast::DummyExpression(); });
   }
 
   //*--------------------
@@ -546,7 +555,15 @@ namespace parser
     {
       for_stmt->initializer = parse_expression(parser, DEFAULT);
     }
-    if (parser.current_kind() != lexer::TokenKind::OF)
+    if (parser.current_kind() == lexer::TokenKind::OF)
+    {
+      parser.advance();
+      for_stmt->array_of = parse_expression(parser, DEFAULT);
+      for_stmt->of_loop = true;
+      for_stmt->condition = nullptr;
+      for_stmt->post = nullptr;
+    }
+    else
     {
       parser.expect(lexer::TokenKind::SEMICOLON, "parser.cpp : parse_for_statement() : Expected ';' after for loop initializer");
       if (parser.current_kind() != lexer::TokenKind::SEMICOLON)
@@ -558,13 +575,7 @@ namespace parser
       {
         for_stmt->post = parse_expression(parser, DEFAULT);
       }
-    }
-    else
-    {
-      parser.advance();
-      for_stmt->array_of = parse_expression(parser, DEFAULT);
-      for_stmt->condition = nullptr;
-      for_stmt->post = nullptr;
+      for_stmt->of_loop = false;
     }
     parser.expect(lexer::TokenKind::CLOSE_PAREN, "parser.cpp : parse_for_statement() : Expected ')' after for loop post-expression");
 
@@ -714,7 +725,20 @@ namespace parser
       }
       parser.expect(lexer::TokenKind::CLOSE_SQUARE, "parser.cpp : parse_primary_expression() : Expected ']' to close array expression");
       return array;
-    }
+    } /*
+     case lexer::TokenKind::OPEN_CURLY:
+     {
+       ast::ObjectExpression *object = new ast::ObjectExpression();
+       object->linestart = parser.current_token().linestart;
+       object->columnstart = parser.current_token().columnstart;
+       object->kind = ast::StatementKind::OBJECT_EXPRESSION;
+       parser.advance();
+       object->properties = parse_properties(parser);
+       object->lineend = parser.current_token().lineend;
+       object->columnend = parser.current_token().columnend;
+       parser.expect(lexer::TokenKind::CLOSE_CURLY, "parser.cpp : parse_primary_expression() : Expected '}' to close object expression");
+       return object;
+     }*/
     default:
     {
       // [DEBUG**] std::cerr << "[parse_primary_expression] Returning null expression from default case\n";
@@ -871,6 +895,44 @@ namespace parser
 
     return var_decl;
   }
+  ast::Expression *parse_object_expression(parser::parser_ &parser)
+  {
+    ast::ObjectExpression *object = new ast::ObjectExpression();
+    object->linestart = parser.current_token().linestart;
+    object->columnstart = parser.current_token().columnstart;
+    object->kind = ast::StatementKind::OBJECT_EXPRESSION;
+    object->structure = nullptr;
+    parser.advance();
+    object->properties = parse_properties(parser);
+    object->lineend = parser.current_token().lineend;
+    object->columnend = parser.current_token().columnend;
+    parser.expect(lexer::TokenKind::CLOSE_CURLY, "parser.cpp : parse_primary_expression() : Expected '}' to close object expression");
+    return object;
+  }
+  ast::Expression *parse_member_expression(parser::parser_ &parser, ast::Expression *left, BindingPower binding_power)
+  {
+    lexer::Token op = parser.advance();
+    ast::Expression *right = parse_expression(parser, binding_power);
+    ast::MemberExpression *member_expr = new ast::MemberExpression();
+    lexer::Token close_square;
+    bool is_computed = false;
+    if (parser.current_kind() == lexer::TokenKind::CLOSE_SQUARE)
+    {
+      is_computed = true;
+      close_square = parser.advance();
+    }
+    member_expr->object = left;
+    member_expr->property = right;
+    member_expr->is_computed = is_computed;
+    member_expr->linestart = left->linestart;
+    member_expr->lineend = is_computed == true ? close_square.lineend : right->lineend;
+    member_expr->columnstart = left->columnstart;
+    member_expr->columnend = is_computed == true ? close_square.columnend : right->columnend;
+    member_expr->kind = ast::StatementKind::MEMBER_EXPRESSION;
+
+    return member_expr;
+  }
+
   //*---------------
   //*    HELPERS
   //*---------------
@@ -951,5 +1013,22 @@ namespace parser
     }
 
     return params;
+  }
+  std::vector<std::pair<ast::Expression *, ast::Expression *>> parse_properties(parser_ &parser)
+  {
+    std::vector<std::pair<ast::Expression *, ast::Expression *>> properties;
+    while (parser.current_kind() != lexer::TokenKind::CLOSE_CURLY)
+    {
+      if (parser.current_kind() == lexer::TokenKind::COMMA)
+      {
+        parser.advance();
+        continue;
+      }
+      auto key = parse_expression(parser, DEFAULT);
+      parser.expect(lexer::TokenKind::COLON, "parser.cpp : parse_primary_expression() : Expected ':' after object key");
+      auto value = parse_expression(parser, DEFAULT);
+      properties.push_back(std::make_pair(key, value));
+    }
+    return properties;
   }
 }

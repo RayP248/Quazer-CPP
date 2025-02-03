@@ -15,6 +15,7 @@ fn fib (n: number) -> number {
   return c;
 }
 
+-*
 let nums = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 outln("nums before: ", nums);
 outln("Filtering with an offset of 1...");
@@ -22,3 +23,14 @@ for (let num of nums) {
   num = fib(num);
 }
 outln("nums after: ", nums);
+*-
+
+let fibs = {
+  one: fib(1),
+  two: fib(2),
+  three: fib(3)
+};
+
+outln("one: ", fibs.one);
+outln("two: ", fibs.two);
+outln("three: ", fibs.three);
