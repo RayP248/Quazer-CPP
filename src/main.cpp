@@ -103,7 +103,8 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
 
       std::string result;
       result += indentFunc(level) + "Type {\n";
-      result += indentFunc(level + 2) + "name: \"" + node->name + "\",\n";
+      result += indentFunc(level + 2) + "name: \"" + node->name +
+                "\",\n";
       std::string generics_str = "[";
       for (size_t i = 0; i < node->generics.size(); ++i)
       {
@@ -371,18 +372,18 @@ int main(int argc, char **argv)
   std::string input((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
   auto tokens = lexer::tokenize(input);
   error::display_all_errors(false);
-  std::cout << "Tokens:\n";
+  /* std::cout << "Tokens:\n";
   for (const auto &token : tokens)
   {
     token.debug();
   }
-  std::cout << "------------------------------------\n";
+  std::cout << "------------------------------------\n"; */
   auto program = parser::parse(tokens);
   error::display_all_errors(true);
-  std::cout << "Finished Parsing\n";
+  // std::cout << "Finished Parsing\n";
   std::string output = print_AST(&program);
-  std::cout << "AST:\n";
-  std::cout << output;
+  // std::cout << "AST:\n";
+  // std::cout << output;
   std::ofstream outFile("output.txt");
   if (outFile.is_open())
   {
@@ -394,12 +395,12 @@ int main(int argc, char **argv)
     std::cerr << "Unable to open output file";
     exit(1);
   }
-  std::cout << "Creating global env\n";
+  // std::cout << "Creating global env\n";
   auto env = interpreter::create_global_environment();
-  std::cout << "Interpreting program\n";
+  // std::cout << "Interpreting program\n";
   ast::ASTVariant variant_program = &program;
   auto result = interpreter::interpret(&variant_program, env, false);
   error::display_all_errors(true);
-  std::cout << "Final Result: " << print_value(*result) << "\n";
+  // std::cout << "Final Result: " << print_value(*result) << "\n";
   exit(0);
 }

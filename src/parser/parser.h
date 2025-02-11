@@ -89,6 +89,7 @@ namespace parser
 
   ast::Type *parse_symbol_type(parser::parser_ &parser);
   ast::Type parse_type(parser::parser_ &parser, BindingPower binding_power);
+  ast::Type *parse_array_type(parser_ &parser);
 
   //*------------------
   //*    STATEMENTS

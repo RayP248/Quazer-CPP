@@ -15,15 +15,14 @@ fn fib (n: number) -> number {
   return c;
 }
 
--*
-let nums = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+let nums: []any = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 outln("nums before: ", nums);
-outln("Filtering with an offset of 1...");
 for (let num of nums) {
   num = fib(num);
 }
+
 outln("nums after: ", nums);
-*-
+outln("nums.length: ", nums.length);
 
 let fibs = {
   one: fib(1),
@@ -31,6 +30,15 @@ let fibs = {
   three: fib(3)
 };
 
-outln("one: ", fibs.one);
+outln("one[]: ", fibs["one"]);
 outln("two: ", fibs.two);
-outln("three: ", fibs.three);
+outln("three[]: ", fibs["three"]);
+
+fibs["four"] = fib(4);
+outln("four: ", fibs.four);
+
+fibs.five = fib(5);
+outln("five[]: ", fibs["five"].string);
+
+fibs.six = fib(in("Enter a number to be converted into the nth number in the Fibonacci Sequence and stored in fibs.six: ").num);
+outln("fib: ", fibs.six);

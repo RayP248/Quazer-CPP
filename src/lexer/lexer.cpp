@@ -369,7 +369,7 @@ namespace lexer {
   }
 
   std::vector<lexer::Token> tokenize(std::string input) {
-    // [DEBUG**] std::cout << "[Debug] Starting tokenization\n"; // Debug
+    // [DEBUG**]std::cout << "[Debug] Starting tokenization\n"; // Debug
 
     // Strip UTF-8 BOM if present
     if (input.size() >= 3 &&
@@ -448,7 +448,7 @@ namespace lexer {
     while (it != end) {
       // Skip comment lines starting with `--`
       if (std::distance(it, end) > 1 && *it == '-' && *(it + 1) == '-') {
-        // [DEBUG**] std::cout << "[Debug] Skipping comment line\n"; // Debug
+        // [DEBUG**]std::cout << "[Debug] Skipping comment line\n"; // Debug
         // Skip until newline or end
         while (it != end && *it != '\n') {
           ++it;
@@ -458,7 +458,7 @@ namespace lexer {
       }
       else if (std::distance(it, end) > 1 && *it == '-' && *(it + 1) == '*')
       {
-        // [DEBUG**] std::cout << "[Debug] Skipping comment block\n"; // Debug
+        // [DEBUG**]std::cout << "[Debug] Skipping comment block\n"; // Debug
         // Skip until end of block comment
         while (it != end && !(*it == '*' && (it + 1) != end && *(it + 1) == '-'))
         {
@@ -514,7 +514,7 @@ namespace lexer {
               ++it; col++;
             }
             tokens.push_back(new_token(lexer::TokenKind::NUMBER, std::move(num), line, line, col - num.size(), col));
-            // [DEBUG**] std::cout << "[Debug] Token created: NUMBER(" << num << ")\n"; // Debug
+            // [DEBUG**]std::cout << "[Debug] Token created: NUMBER(" << num << ")\n"; // Debug
           }
           else if (std::isalpha(*it))
           {
@@ -534,13 +534,13 @@ namespace lexer {
             if (reserved_keywords.find(lower) != reserved_keywords.end()) {
               tokens.push_back(new_token(reserved_keywords[lower],
                                          std::move(value), line, line, col - value.size(), col));
-              // [DEBUG**] std::cout << "[Debug] Token created: " << token_kind_to_string(reserved_keywords[lower]) << "(" << value << ")\n"; // Debug
+              // [DEBUG**]std::cout << "[Debug] Token created: " << token_kind_to_string(reserved_keywords[lower]) << "(" << value << ")\n"; // Debug
             }
             else
             {
               tokens.push_back(new_token(lexer::TokenKind::IDENTIFIER,
                                          std::move(value), line, line, col - value.size(), col));
-              // [DEBUG**] std::cout << "[Debug] Token created: IDENTIFIER(" << value << ")\n"; // Debug
+              // [DEBUG**]std::cout << "[Debug] Token created: IDENTIFIER(" << value << ")\n"; // Debug
             }
           }
           else
@@ -558,7 +558,7 @@ namespace lexer {
       }
     }
     tokens.push_back(new_token(lexer::TokenKind::EOF_, "", line, line, col, col));
-    // [DEBUG**] std::cout << "[Debug] Tokenization completed. Total tokens: " << tokens.size() << "\n"; // Debug
+    // [DEBUG**]std::cout << "[Debug] Tokenization completed. Total tokens: " << tokens.size() << "\n"; // Debug
     return tokens;
   }
 }

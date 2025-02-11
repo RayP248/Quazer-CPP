@@ -1,4 +1,4 @@
--- Package Entry +
+-- Package Entry
 package main;
 
 -- Explicit Types
@@ -65,7 +65,7 @@ class Person {
 const sub: function = (x: number, y: number) :> x - y;
 
 -- Iterate 1 through 10 and print their value.
-for const val; : 1..10 {
+for const val in 1..10 {
   print(val);
 }
 

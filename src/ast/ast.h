@@ -21,6 +21,7 @@ namespace ast
     IF_STATEMENT,
     FOR_LOOP_STATEMENT,
     NUMBER_EXPRESSION,
+    REFERENCE_EXPRESSION,
     SYMBOL_EXPRESSION,
     STRING_EXPRESSION,
     ARRAY_EXPRESSION,
@@ -71,15 +72,23 @@ namespace ast
   //*-------------
   //*    TYPES
   //*-------------
-  struct Type
+  struct Type : public Expression
   {
     std::string name;
+    std::string raw_name;
     std::vector<Type> generics;
     std::vector<Type> fields;
+
     bool is_inferred = false;
     Type() : is_inferred(true) {}
-    Type(const std::string &name) : name(name), is_inferred(false) {}
+    Type(const std::string &name) : name(name), raw_name(name), is_inferred(false) {}
     Type(const std::string &name, const std::vector<Type> &generics) : name(name), generics(generics), is_inferred(false) {}
+  };
+
+  struct ArrayType : public Type
+  {
+    ast::Type element_type;
+    ArrayType() {}
   };
 
   //*-------------------
@@ -106,7 +115,16 @@ namespace ast
     }
   };
 
-  struct SymbolExpression : public Expression
+  struct ReferenceExpression : public Expression
+  {
+    std::string name;
+    ReferenceExpression()
+    {
+      kind = StatementKind::REFERENCE_EXPRESSION;
+    }
+  };
+
+  struct SymbolExpression : public ReferenceExpression
   {
     std::string value;
     SymbolExpression(const std::string &val)
@@ -121,7 +139,7 @@ namespace ast
     std::vector<Expression *> elements;
     ArrayExpression()
     {
-      kind = StatementKind::EXPRESSION_STATEMENT;
+      kind = StatementKind::ARRAY_EXPRESSION;
     }
     ~ArrayExpression() override
     {
@@ -138,7 +156,7 @@ namespace ast
     Expression *structure;
     ObjectExpression()
     {
-      kind = StatementKind::EXPRESSION_STATEMENT;
+      kind = StatementKind::OBJECT_EXPRESSION;
     }
     ~ObjectExpression() override
     {
@@ -228,14 +246,14 @@ namespace ast
     }
   };
 
-  struct MemberExpression : public Expression
+  struct MemberExpression : public ReferenceExpression
   {
     Expression *object = nullptr;
     Expression *property = nullptr;
     bool is_computed = false;
     MemberExpression()
     {
-      kind = StatementKind::EXPRESSION_STATEMENT;
+      kind = StatementKind::MEMBER_EXPRESSION;
     }
     ~MemberExpression() override
     {
@@ -383,13 +401,29 @@ namespace ast
   typedef std::variant<
       ast::Program *,
       ast::ExpressionStatement *,
-      ast::BinaryExpression *,
+      ast::BlockStatement *,
+      ast::VariableDeclarationStatement *,
+      ast::ReturnStatement *,
+      ast::FunctionDeclarationStatement *,
+      ast::IfStatement *,
+      ast::ForLoopStatement *,
       ast::NumberExpression *,
       ast::StringExpression *,
+      ast::ReferenceExpression *,
       ast::SymbolExpression *,
-      ast::Statement *, // Fallback
-      ast::Expression *>
-      ASTVariant; // Fallback
+      ast::ArrayExpression *,
+      ast::ObjectExpression *,
+      ast::DummyExpression *,
+      ast::BinaryExpression *,
+      ast::CallExpression *,
+      ast::AssignmentExpression *,
+      ast::VariableDeclarationExpression *,
+      ast::MemberExpression *,
+      ast::Type *,
+      ast::ArrayType *,
+      ast::ParameterExpression *,
+      ast::Statement *  // Fallback for any other Statement type
+    > ASTVariant;
   // TODO: Define new AST node structures for additional language constructs.
   // Example:
   /*

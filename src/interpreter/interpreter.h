@@ -47,9 +47,11 @@ namespace interpreter
     Environment *parent = nullptr;
     Environment(std::string package_name = "", Environment *parent = nullptr);
     std::unique_ptr<runtime_value> declare_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Type *explicit_type, ast::Statement *error_expression = nullptr, bool is_constant = false, bool is_public = false);
+    runtime_value *get_object_of_property_path(const std::string &name, ast::Statement *error_expression);
     std::unique_ptr<runtime_value> assign_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Statement *error_expression);
     runtime_value *lookup_variable(std::string name, ast::Statement *error_expression);
     runtime_value *delete_variable(std::string name, ast::Statement *error_expression);
+    std::string lookup_variable_type(std::string name, ast::Statement *error_expression);
     Environment *resolve(std::string name, ast::Statement *error_expression);
   };
   Environment *create_global_environment();
@@ -66,7 +68,7 @@ namespace interpreter
       value = nullptr;
       type = "null";
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created null_value\n"; // Debug
+      // [DEBUG**]std::cout << "[Debug] Created null_value\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -89,7 +91,7 @@ namespace interpreter
     dummy_value()
     {
       type = "dummy";
-      // [DEBUG**] std::cout << "[Debug] Created dummy_value\n"; // Debug
+      // [DEBUG**]std::cout << "[Debug] Created dummy_value\n"; // Debug
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -100,12 +102,11 @@ namespace interpreter
   struct number_value : runtime_value
   {
     double value;
-    number_value(double val, bool is_returned = false)
+    number_value(double val, bool is_returned = false) : value(val)
     {
       type = "number"; // Make sure type is set
-      value = val;
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created number_value: " << value << "\n"; // Debug
+      // [DEBUG**]std::cout << "[Debug] Created number_value: " << value << "\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -119,7 +120,10 @@ namespace interpreter
     }
     std::unique_ptr<runtime_value> clone() const override
     {
-      return std::make_unique<number_value>(*this);
+      // [DEBUG**]std::cout << "[Debug] Cloning number_value: " << value << "\n"; // Debug
+      auto finalval = std::make_unique<number_value>(value, returned_value);
+      // [DEBUG**]std::cout << "[Debug] Cloned number_value: " << finalval->value << "\n"; // Debug
+      return finalval;
     }
   };
 
@@ -131,7 +135,7 @@ namespace interpreter
       value = std::move(val);
       type = "string";
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created string_value: " << value << "\n"; // Debug
+      // [DEBUG**]std::cout << "[Debug] Created string_value: " << value << "\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -157,7 +161,7 @@ namespace interpreter
       value = val;
       type = "boolean";
       returned_value = is_returned;
-      // [DEBUG**] std::cout << "[Debug] Created boolean_value: " << (value ? "true" : "false") << "\n"; // Debug
+      // [DEBUG**]std::cout << "[Debug] Created boolean_value: " << (value ? "true" : "false") << "\n"; // Debug
     }
     std::string to_string() const override
     {
@@ -200,7 +204,7 @@ namespace interpreter
       for (size_t i = 0; i < parameters.size(); i++)
       {
         str += parameters[i]->name;
-        if (parameters[i]->type.name != "")
+        if (!parameters[i]->type.name.empty())
         {
           str += ": ";
           str += parameters[i]->type.name;
@@ -246,7 +250,6 @@ namespace interpreter
     }
     ~function_value()
     {
-      // Removed calls to delete body and parameters to avoid double-free
     }
     std::unique_ptr<runtime_value> clone() const override
     {
@@ -257,9 +260,11 @@ namespace interpreter
   {
     std::string name;
     std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &)> body;
-    native_function_value(std::string name, std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &)> body)
+    size_t arity;
+    native_function_value(std::string name, int arity, std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &)> body)
     {
       this->name = name;
+      this->arity = arity;
       this->body = body;
       type = "native_function";
     }
@@ -270,6 +275,7 @@ namespace interpreter
     native_function_value(const native_function_value &other)
     {
       name = other.name;
+      arity = other.arity;
       body = other.body;
       type = other.type;
     }
@@ -284,6 +290,11 @@ namespace interpreter
   struct array_value : runtime_value
   {
     std::vector<std::unique_ptr<runtime_value>> elements;
+    array_value()
+    {
+      returned_value = false;
+      type = "[]";
+    }
     array_value(std::vector<std::unique_ptr<runtime_value>> elements, bool is_returned = false)
     {
       this->elements = std::move(elements);
@@ -293,19 +304,24 @@ namespace interpreter
       {
         types.push_back(element->type);
       }
-      std::string type = "array<";
-      std::unordered_set<std::string> uniqueTypes(types.begin(), types.end());
+      std::string type = "[]";
+      std::unordered_set<std::string> unique_types(types.begin(), types.end());
       bool first = true;
-      for (const auto &t : uniqueTypes)
+      for (const auto &t : unique_types)
       {
         if (!first)
         {
-          type += ", ";
+          type += " | ";
         }
         type += t;
         first = false;
       }
-      type += ">";
+      this->type = type;
+    }
+    array_value(std::vector<std::unique_ptr<runtime_value>> elements, std::string type, bool is_returned = false)
+    {
+      this->elements = std::move(elements);
+      returned_value = is_returned;
       this->type = type;
     }
     std::string to_string() const override
@@ -324,18 +340,44 @@ namespace interpreter
     }
     array_value(const array_value &other)
     {
+      std::cout << "\nCopying array\n";
+      std::cout << "Copying elements\n";
       for (const auto &element : other.elements)
       {
+        std::cout << "Copying element\n";
         elements.push_back(element->clone());
+        std::cout << "Copied element\n";
       }
+      std::cout << "Copied elements\n";
+      std::cout << "Copying type\n";
       type = other.type;
+      std::cout << "Copied type\n";
     }
     ~array_value()
     {
+      for (auto &element : elements)
+      {
+        element.reset();
+      }
     }
     std::unique_ptr<runtime_value> clone() const override
     {
-      return std::make_unique<array_value>(*this);
+      // [DEBUG**] std::cout << "\nCloning array\n";
+      std::vector<std::unique_ptr<runtime_value>> cloned_elements;
+      cloned_elements.reserve(elements.size());
+      try
+      {
+        for (const auto &element : elements)
+        {
+          cloned_elements.push_back(element->clone());
+        }
+      }
+      catch (const std::exception &e)
+      {
+        std::cerr << "Error while cloning array elements: " << e.what() << std::endl;
+        throw;
+      }
+      return std::make_unique<array_value>(std::move(cloned_elements), type, returned_value);
     }
   };
   struct object_value : runtime_value

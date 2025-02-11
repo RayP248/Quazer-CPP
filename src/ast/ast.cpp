@@ -26,6 +26,8 @@ namespace ast
       return "ForLoopStatement";
     case NUMBER_EXPRESSION:
       return "NumberExpression";
+    case REFERENCE_EXPRESSION:
+      return "ReferenceExpression";
     case SYMBOL_EXPRESSION:
       return "SymbolExpression";
     case STRING_EXPRESSION:
