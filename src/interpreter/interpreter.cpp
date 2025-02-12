@@ -5,6 +5,7 @@
 #include <cmath>
 #include <fstream>
 #include <functional>
+#include <regex>
 
 #include <algorithm>
 
@@ -974,7 +975,36 @@ namespace interpreter
 
         if (arg->type != fn_val->parameters[i]->type.name)
         {
-          error::Error err(error::ErrorCode::RUNTIME_ERROR, "Argument type mismatch for parameter '" + fn_val->parameters[i]->name + "'. Expected '" + fn_val->parameters[i]->type.name + "' type, got '" + arg->type + "' type.", call->linestart, call->lineend, call->columnstart, call->columnend, "interpreter.cpp : interpret_call_expression : for", error::ErrorImportance::MODERATE);
+          std::string ordinal;
+          int pos = i + 1;
+          if ((pos % 100) / 10 == 1)
+          {
+            ordinal = std::to_string(pos) + "th";
+          }
+          else if (pos % 10 == 1)
+          {
+            ordinal = std::to_string(pos) + "st";
+          }
+          else if (pos % 10 == 2)
+          {
+            ordinal = std::to_string(pos) + "nd";
+          }
+          else if (pos % 10 == 3)
+          {
+            ordinal = std::to_string(pos) + "rd";
+          }
+          else
+          {
+            ordinal = std::to_string(pos) + "th";
+          }
+          error::Error err(
+              error::ErrorCode::RUNTIME_ERROR,
+              "Argument type mismatch for " + ordinal + " parameter '" + fn_val->parameters[i]->name +
+                  "'. Expected '" + fn_val->parameters[i]->type.name + "' type, got '" + arg->type + "' type.",
+              call->linestart, call->lineend, call->columnstart, call->columnend,
+              "interpreter.cpp : interpret_call_expression : for",
+              error::ErrorImportance::MODERATE);
+          return std::make_unique<null_value>(is_returned);
         }
         closure->declare_variable(fn_val->parameters[i]->name, std::move(arg), &fn_val->parameters[i]->type, call->args[i], false, false);
       }
@@ -1264,7 +1294,15 @@ namespace interpreter
     {
       if (auto str_val = dynamic_cast<string_value *>(obj.get()))
       {
-        return std::make_unique<number_value>(std::stod(str_val->value), is_returned);
+        if (std::regex_match(str_val->value, std::regex("^[0-9]+(\\.[0-9]+)?$")))
+        {
+          return std::make_unique<number_value>(std::stod(str_val->value), is_returned);
+        }
+        else
+        {
+          error::Error err(error::ErrorCode::RUNTIME_ERROR, "Cannot convert string of invalid number to number. Invalid number format.", mem->linestart, mem->lineend, mem->columnstart, mem->columnend, "interpreter.cpp : interpret_member_expression : if", error::ErrorImportance::MODERATE);
+          return str_val->clone();
+        }
       }
     }
     if (auto obj_val = dynamic_cast<object_value *>(obj.get()))

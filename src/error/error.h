@@ -40,6 +40,7 @@ namespace error
     void print(bool first, bool last);
 
   private:
+    bool inMultiLineComment = false;
     void highlightLine(const std::string &line);
     void highlightErrorLocation(int columnstart, int columnend);
   };

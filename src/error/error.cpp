@@ -131,18 +131,20 @@ namespace error
 
   void Error::highlightLine(const std::string &line)
   {
-    // Updated regex to separate punctuation from alphanumerics
-    static const std::regex tokenRegex(R"(\w+|[^\w\s]+|\s+)");
-    static const std::regex stringRegex(R"(".*$")");
-    // Keywords excluding these new types
+    static const std::regex tokenRegex(R"("([^"\\]|\\.)*"|[\(\)\{\}\[\]]|\w+|[^\w\s\(\)\{\}\[\]]+|\s+)");
+    static const std::regex stringRegex(R"("([^"\\]|\\.)*")");
     static const std::regex keywordRegex(R"(\b(public|const|let|if|else|for|while|return|class|struct|fn|void|of)\b)");
-    // Updated type regex
-    static const std::regex typeRegex(R"(\b(number|string|array)\b)");
+    static const std::regex typeRegex(R"(^[\w:\[\]\(\)\{\}]+$)");
     static const std::regex numberRegex(R"(^\d+(\.\d+)?$)");
     static const std::regex functionRegex(R"([A-Za-z_]\w*(?=\())");
     static const std::regex punctuationRegex(R"([\(\)\{\}\[\]])");
 
     std::sregex_iterator begin(line.begin(), line.end(), tokenRegex), end;
+    bool expectingType = false;
+
+    std::string prevToken = "";
+    std::string prevPrevToken = "";
+
     for (auto it = begin; it != end; ++it)
     {
       std::string token = it->str();
@@ -151,61 +153,112 @@ namespace error
         std::cout << token;
         continue;
       }
+      if (token == "--")
+      {
+        setColor(90);
+        std::cout << token << line.substr(it->position() + token.length());
+        resetColor();
+        break;
+      }
+      if (token == "-*")
+      {
+        inMultiLineComment = true;
+        setColor(90);
+        std::cout << token;
+        resetColor();
+        continue;
+      }
 
-      // Check if next non-whitespace char is '(' (function check)
       size_t nextPos = it->position() + token.size();
       while (nextPos < line.size() && std::isspace((unsigned char)line[nextPos]))
         nextPos++;
       bool looksLikeFunction = (nextPos < line.size() && line[nextPos] == '(');
 
-      // Apply highlighting
       if (looksLikeFunction)
       {
-        // set function color to #DCDCAA -> (220, 220, 170)
         setColorRGB(220, 220, 170);
-      }
-      else if (std::regex_match(token, stringRegex))
-      {
-        setColor(93); // orange
       }
       else if (std::regex_match(token, keywordRegex))
       {
-        setColor(34); // dark blue
+        setColor(34);
       }
-      else if (std::regex_match(token, typeRegex))
+      else if (expectingType && std::regex_match(token, typeRegex))
       {
-        // #4EC9B0 -> (78, 201, 176)
         setColorRGB(80, 200, 120);
       }
       else if (std::regex_match(token, numberRegex))
       {
-        setColor(32); // green
+        setColor(32);
       }
       else if (std::regex_match(token, punctuationRegex))
       {
-        // Ensure it's not part of an ANSI escape sequence
         bool isAnsiEscape = false;
         if (it->position() > 0 && line[it->position() - 1] == '\033')
         {
           isAnsiEscape = true;
         }
-        size_t nextPos = it->position() + token.size();
-        if (nextPos < line.size() && (line[nextPos] == 'm' || line.substr(nextPos, 5) == "38;2;"))
+        size_t nextP = it->position() + token.size();
+        if (nextP < line.size() && (line[nextP] == 'm' || line.substr(nextP, 5) == "38;2;"))
         {
           isAnsiEscape = true;
         }
         if (!isAnsiEscape)
         {
-          setColor(35); // purple
+          setColor(35);
         }
       }
       else if (std::isalpha(token[0]) || token[0] == '_')
       {
-        setColor(36); // light blue
+        setColorRGB(156, 220, 254);
+      }
+      else if (std::regex_match(token, stringRegex))
+      {
+        setColorRGB(206, 145, 120);
       }
 
       std::cout << token;
       resetColor();
+
+      if (token == ":" || token == "->")
+      {
+        if (prevPrevToken == "let" || prevPrevToken == "const")
+          expectingType = true;
+        else
+          expectingType = false;
+      }
+      else if (!std::regex_match(token, typeRegex))
+      {
+        expectingType = false;
+      }
+      if (inMultiLineComment)
+      {
+        setColor(90); // grey for comment
+        std::cout << token;
+        if (token.find("*-") != std::string::npos)
+          inMultiLineComment = false;
+        resetColor();
+        continue;
+      }
+      if (token == "--")
+      {
+        setColor(90);
+        std::cout << token << line.substr(it->position() + token.length());
+        resetColor();
+        break;
+      }
+      if (token == "-*")
+      {
+        inMultiLineComment = true;
+        setColor(90);
+        std::cout << token;
+        resetColor();
+        continue;
+      }
+      if (!std::all_of(token.begin(), token.end(), isspace))
+      {
+        prevPrevToken = prevToken;
+        prevToken = token;
+      }
     }
   }
 

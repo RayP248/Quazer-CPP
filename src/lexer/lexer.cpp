@@ -545,7 +545,6 @@ namespace lexer {
           }
           else
           {
-            std::cerr << "[Error] Unknown token: '" << *it << "'\n"; // Debug
             error::Error(error::ErrorCode::LEXER_ERROR, "Unknown token: '" + std::string(1, *it) + "'",
                          line, -1, col, -1,
                          "lexer.cpp : switch statement : default case : else",

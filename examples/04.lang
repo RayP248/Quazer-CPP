@@ -20,25 +20,21 @@ outln("nums before: ", nums);
 for (let num of nums) {
   num = fib(num);
 }
-
 outln("nums after: ", nums);
 outln("nums.length: ", nums.length);
 
 let fibs = {
   one: fib(1),
   two: fib(2),
-  three: fib(3)
-};
-
+  three: fib(3),
+  incopy: in
+}
 outln("one[]: ", fibs["one"]);
 outln("two: ", fibs.two);
 outln("three[]: ", fibs["three"]);
-
 fibs["four"] = fib(4);
 outln("four: ", fibs.four);
-
 fibs.five = fib(5);
 outln("five[]: ", fibs["five"].string);
-
-fibs.six = fib(in("Enter a number to be converted into the nth number in the Fibonacci Sequence and stored in fibs.six: ").num);
+fibs.six = fib(fibs.incopy("Enter a number to be converted into the nth number in the Fibonacci Sequence and stored in fibs.six: ").num);
 outln("fib: ", fibs.six);
