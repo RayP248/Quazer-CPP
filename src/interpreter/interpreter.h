@@ -52,6 +52,8 @@ namespace interpreter
     runtime_value *lookup_variable(std::string name, ast::Statement *error_expression);
     runtime_value *delete_variable(std::string name, ast::Statement *error_expression);
     std::string lookup_variable_type(std::string name, ast::Statement *error_expression);
+    bool is_variable_constant(std::string name);
+    bool is_variable_public(std::string name);
     Environment *resolve(std::string name, ast::Statement *error_expression);
   };
   Environment *create_global_environment();
@@ -256,12 +258,13 @@ namespace interpreter
       return std::make_unique<function_value>(*this);
     }
   };
+
   struct native_function_value : runtime_value
   {
     std::string name;
-    std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &)> body;
+    std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &, ast::Expression &)> body;
     size_t arity;
-    native_function_value(std::string name, int arity, std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &)> body)
+    native_function_value(std::string name, int arity, std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &, ast::Expression &)> body)
     {
       this->name = name;
       this->arity = arity;
@@ -287,6 +290,7 @@ namespace interpreter
       return std::make_unique<native_function_value>(*this);
     }
   };
+
   struct array_value : runtime_value
   {
     std::vector<std::unique_ptr<runtime_value>> elements;
@@ -338,48 +342,42 @@ namespace interpreter
       str += "]";
       return str;
     }
-    array_value(const array_value &other)
-    {
-      std::cout << "\nCopying array\n";
-      std::cout << "Copying elements\n";
-      for (const auto &element : other.elements)
-      {
-        std::cout << "Copying element\n";
-        elements.push_back(element->clone());
-        std::cout << "Copied element\n";
-      }
-      std::cout << "Copied elements\n";
-      std::cout << "Copying type\n";
-      type = other.type;
-      std::cout << "Copied type\n";
-    }
-    ~array_value()
-    {
-      for (auto &element : elements)
-      {
-        element.reset();
-      }
-    }
     std::unique_ptr<runtime_value> clone() const override
     {
-      // [DEBUG**] std::cout << "\nCloning array\n";
+      /* [DEBUG**] */ std::cout << "[DEBUG**] Starting clone() of array_value, type: " << type << ", elements count: " << elements.size() << "\n";
+      static thread_local int clone_depth = 0;
+      /* [DEBUG**] */ std::cout << "[DEBUG**] Current clone depth: " << clone_depth << "\n";
+      const int CLONE_DEPTH_LIMIT = 1000;
+      /* [DEBUG**] */ std::cout << "[DEBUG**] Clone depth limit: " << CLONE_DEPTH_LIMIT << "\n";
+      if (clone_depth > CLONE_DEPTH_LIMIT)
+      {
+        /* [DEBUG**] */ std::cout << "[DEBUG**] Clone depth limit reached (" << clone_depth << "), returning null_value\n";
+        return std::make_unique<null_value>();
+      }
+      clone_depth++;
+      /* [DEBUG**] */ std::cout << "[DEBUG**] Starting clone() of array_value, type: " << type
+                                << ", elements count: " << elements.size() << ", clone depth: " << clone_depth << "\n";
       std::vector<std::unique_ptr<runtime_value>> cloned_elements;
       cloned_elements.reserve(elements.size());
-      try
+      for (size_t i = 0; i < elements.size(); i++)
       {
-        for (const auto &element : elements)
+        /* [DEBUG**] */ std::cout << "[DEBUG**] Cloning element index " << i << ", element type: " << elements[i]->type << "\n";
+        if (elements[i].get() == this) // self-reference detected
         {
-          cloned_elements.push_back(element->clone());
+          /* [DEBUG**] */ std::cout << "[DEBUG**] Self-reference detected at index " << i << ", inserting null_value\n";
+          cloned_elements.push_back(std::make_unique<null_value>());
+        }
+        else
+        {
+          cloned_elements.push_back(elements[i]->clone());
         }
       }
-      catch (const std::exception &e)
-      {
-        std::cerr << "Error while cloning array elements: " << e.what() << std::endl;
-        throw;
-      }
+      /* [DEBUG**] */ std::cout << "[DEBUG**] Finished clone() of array_value at depth " << clone_depth << "\n";
+      clone_depth--;
       return std::make_unique<array_value>(std::move(cloned_elements), type, returned_value);
     }
   };
+
   struct object_value : runtime_value
   {
     std::map<std::string, std::unique_ptr<runtime_value>> properties;
@@ -419,6 +417,7 @@ namespace interpreter
       return std::make_unique<object_value>(*this);
     }
   };
+
   //*------------------
   //*    STATEMENTS
   //*------------------

@@ -6,8 +6,9 @@
 #include <fstream>
 #include <functional>
 #include <regex>
-
+#include "../type-checker/types.h"
 #include <algorithm>
+#include <cstdlib> // For malloc and free
 
 namespace interpreter
 {
@@ -483,6 +484,16 @@ namespace interpreter
     }
   }
 
+  bool Environment::is_variable_constant(std::string name)
+  {
+    return constants.find(name) != constants.end();
+  }
+
+  bool Environment::is_variable_public(std::string name)
+  {
+    return public_variables.find(name) != public_variables.end();
+  }
+
   Environment *Environment::resolve(std::string name, ast::Statement *error_expression)
   {
     // [DEBUG**]std::cout << "[resolve] Resolving variable: " << name << "\n";
@@ -524,7 +535,7 @@ namespace interpreter
     auto out_fn = std::make_unique<native_function_value>(
         "out",
         -1,
-        [](const std::vector<std::unique_ptr<runtime_value>> &args) -> std::unique_ptr<runtime_value>
+        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
         {
           for (const auto &arg : args)
           {
@@ -549,7 +560,7 @@ namespace interpreter
     auto outln_fn = std::make_unique<native_function_value>(
         "outln",
         -1,
-        [](const std::vector<std::unique_ptr<runtime_value>> &args) -> std::unique_ptr<runtime_value>
+        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
         {
           for (const auto &arg : args)
           {
@@ -575,7 +586,7 @@ namespace interpreter
     auto in = std::make_unique<native_function_value>(
         "in",
         -1,
-        [](const std::vector<std::unique_ptr<runtime_value>> &args) -> std::unique_ptr<runtime_value>
+        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
         {
           for (const auto &arg : args)
           {
@@ -586,9 +597,34 @@ namespace interpreter
           return std::make_unique<string_value>(input, false);
         });
 
+    auto alloc = std::make_unique<native_function_value>(
+        "alloc",
+        2,
+        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
+        {
+          auto value = args[0].get();
+          auto size = dynamic_cast<number_value *>(args[1].get());
+          if (!size)
+          {
+            error::Error err(
+                error::ErrorCode::RUNTIME_ERROR,
+                "First argument to alloc must be a number.",
+                error_expression.linestart, error_expression.lineend, error_expression.columnstart, error_expression.columnend,
+                "interpreter.cpp : alloc",
+                error::ErrorImportance::CRITICAL);
+            return std::make_unique<null_value>(false);
+          }
+          std::vector<std::unique_ptr<runtime_value>> elements;
+          for (size_t i = 0; i < size->value; ++i)
+          {
+            elements.push_back(value->clone());
+          }
+          return std::make_unique<array_value>(std::move(elements), false);
+        });
     global_env->declare_variable("out", std::move(out_fn), new ast::Type("native_function"), nullptr, true, false);
     global_env->declare_variable("outln", std::move(outln_fn), new ast::Type("native_function"), nullptr, true, false);
     global_env->declare_variable("in", std::move(in), new ast::Type("native_function"), nullptr, true, false);
+    global_env->declare_variable("alloc", std::move(alloc), new ast::Type("native_function"), nullptr, true, false);
     return global_env;
   }
 
@@ -655,6 +691,26 @@ namespace interpreter
     {
       ast::ASTVariant variant = var_decl->value;
       value = interpret(&variant, env, is_returned);
+      // If the evaluated value is an empty array, update its type to the declared type
+      if (auto arr = dynamic_cast<array_value *>(value.get()))
+      {
+        if (arr->elements.empty() && var_decl->type.raw_name.rfind("[]", 0) == 0)
+        {
+          arr->type = var_decl->type.raw_name;
+        }
+      }
+      // New type-check on variable declaration
+      if (value && !type_checker::is_matching_type(var_decl->type, *value))
+      {
+        error::Error err(
+            error::ErrorCode::RUNTIME_ERROR,
+            "Variable declaration type mismatch for '" + var_decl->name + "'. Expected '" +
+                var_decl->type.raw_name + "', got '" + value->type + "'.",
+            var_decl->linestart, var_decl->lineend, var_decl->columnstart, var_decl->columnend,
+            "interpreter.cpp : interpret_variable_declaration_statement",
+            error::ErrorImportance::MODERATE);
+        return std::make_unique<null_value>(is_returned);
+      }
     }
     std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), &var_decl->type, var_decl, var_decl->is_const, var_decl->is_public);
     return finalval;
@@ -973,34 +1029,26 @@ namespace interpreter
         ast::ASTVariant arg_variant = call->args[i];
         arg = interpret(&arg_variant, env, false);
 
-        if (arg->type != fn_val->parameters[i]->type.name)
+        if (!type_checker::is_matching_type(fn_val->parameters[i]->type, *arg))
         {
           std::string ordinal;
           int pos = i + 1;
           if ((pos % 100) / 10 == 1)
-          {
             ordinal = std::to_string(pos) + "th";
-          }
           else if (pos % 10 == 1)
-          {
             ordinal = std::to_string(pos) + "st";
-          }
           else if (pos % 10 == 2)
-          {
             ordinal = std::to_string(pos) + "nd";
-          }
           else if (pos % 10 == 3)
-          {
             ordinal = std::to_string(pos) + "rd";
-          }
           else
-          {
             ordinal = std::to_string(pos) + "th";
-          }
+
           error::Error err(
               error::ErrorCode::RUNTIME_ERROR,
               "Argument type mismatch for " + ordinal + " parameter '" + fn_val->parameters[i]->name +
-                  "'. Expected '" + fn_val->parameters[i]->type.name + "' type, got '" + arg->type + "' type.",
+                  "'. Expected '" + fn_val->parameters[i]->type.raw_name +
+                  "' type, got '" + arg->type + "' type.",
               call->linestart, call->lineend, call->columnstart, call->columnend,
               "interpreter.cpp : interpret_call_expression : for",
               error::ErrorImportance::MODERATE);
@@ -1031,7 +1079,7 @@ namespace interpreter
       }
       else if (native_fn_val->arity == -1 || args.size() == native_fn_val->arity)
       {
-        auto finalval = native_fn_val->body(args);
+        auto finalval = native_fn_val->body(args, *call);
         return finalval;
       }
       return std::make_unique<null_value>(is_returned);
@@ -1050,6 +1098,18 @@ namespace interpreter
     {
       ast::ASTVariant variant = var_decl->value;
       value = interpret(&variant, env, is_returned);
+      // New type-check on variable declaration expression
+      if (value && !type_checker::is_matching_type(var_decl->type, *value))
+      {
+        error::Error err(
+            error::ErrorCode::RUNTIME_ERROR,
+            "Variable declaration expression type mismatch for '" + var_decl->name +
+                "'. Expected '" + var_decl->type.raw_name + "', got '" + value->type + "'.",
+            var_decl->linestart, var_decl->lineend, var_decl->columnstart, var_decl->columnend,
+            "interpreter.cpp : interpret_variable_declaration_expression",
+            error::ErrorImportance::MODERATE);
+        return std::make_unique<null_value>(is_returned);
+      }
     }
     std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), &var_decl->type, var_decl, false, false);
     return finalval;
@@ -1112,6 +1172,24 @@ namespace interpreter
     auto lhs = interpret(&left_variant, env, false);
     ast::ASTVariant right_variant = assign->right;
     auto rhs = interpret(&right_variant, env, false);
+
+    // New type-check before assignment (for simple symbol assignments)
+    if (auto symExpr = dynamic_cast<ast::SymbolExpression *>(assign->left))
+    {
+      std::string varName = symExpr->value;
+      std::string expected = env->lookup_variable_type(varName, assign);
+      if (expected != "any" && expected != "nulltype" && !type_checker::is_matching_type(ast::Type(expected), *rhs))
+      {
+        error::Error err(
+            error::ErrorCode::RUNTIME_ERROR,
+            "Assignment type mismatch for variable '" + varName + "'. Expected '" +
+                expected + "', got '" + rhs->type + "'.",
+            assign->linestart, assign->lineend, assign->columnstart, assign->columnend,
+            "interpreter.cpp : interpret_assignment_expression",
+            error::ErrorImportance::MODERATE);
+        return std::make_unique<null_value>(is_returned);
+      }
+    }
 
     if (auto lnum = dynamic_cast<number_value *>(lhs.get()))
     {
@@ -1225,67 +1303,40 @@ namespace interpreter
         return std::make_unique<native_function_value>(
             "append",
             1,
-            [arr_val, env, mem, is_returned](const std::vector<std::unique_ptr<runtime_value>> &args) -> std::unique_ptr<runtime_value>
+            [arr_val, env, mem, is_returned](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
             {
-              // [DEBUG**]std::cout << "[interpret_member_expression] Appending to array: " << dynamic_cast<ast::ReferenceExpression *>(mem->object)->name << "\n";
-              std::string array_type = env->lookup_variable_type(dynamic_cast<ast::ReferenceExpression *>(mem->object)->name, mem);
-              // [DEBUG**]std::cout << "[interpret_member_expression] Array type: " << array_type << "\n";
-              if (array_type == "[]any")
+              /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: before appending, array type: " << arr_val->type << "\n";
+              for (const auto &arg : args)
               {
-                // [DEBUG**]std::cout << "[interpret_member_expression] Appending to array of any\n";
-                for (const auto &arg : args)
+                arr_val->elements.push_back(arg->clone());
+              }
+              /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: after appending, about to clone array\n";
+              if (auto refExpr = dynamic_cast<ast::ReferenceExpression *>(mem->object))
+              {
+                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: reference expression found\n";
+                std::string varName = refExpr->name;
+                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: variable name: " << varName << "\n";
+                std::unique_ptr<runtime_value> clonedArray;
+                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: about to clone array\n";
+                try
                 {
-                  // [DEBUG**]std::cout << "[interpret_member_expression] Appending to array of any: " << arg->to_string() << "\n";
-                  auto clone = arg->clone();
-                  // [DEBUG**]std::cout << "[interpret_member_expression] Cloned: " << clone->to_string() << "\n";
-                  arr_val->elements.push_back(std::move(clone));
-                  // [DEBUG**]std::cout << "[interpret_member_expression] Appended to array of any\n";
+                  /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: cloning array\n";
+                  clonedArray = arr_val->clone();
+                  /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: cloned array successfully\n";
                 }
-                // [DEBUG**]std::cout << "[interpret_member_expression] Returning null value\n";
-              }
-              else
-              {
-                for (const auto &arg : args)
+                catch (const std::exception &e)
                 {
-                  if (arg->type == array_type.substr(0, 2))
-                  {
-                    arr_val->elements.push_back(arg->clone());
-                  }
-                  else
-                  {
-                    error::Error err(error::ErrorCode::RUNTIME_ERROR, "Type mismatch when appending value to array. Expected '" + array_type + "' type, got '" + arg->type + "' type.", mem->linestart, mem->lineend, mem->columnstart, mem->columnend, "interpreter.cpp : interpret_member_expression : if", error::ErrorImportance::MODERATE);
-                  }
+                  std::cout << "[DEBUG**] Exception during clone(): " << e.what() << "\n";
+                  return std::make_unique<null_value>(false);
                 }
+                // Delete the existing variable.
+                env->delete_variable(varName, mem);
+                // Redeclare the variable with the cloned modified array.
+                bool is_const = env->is_variable_constant(varName);
+                bool is_public = env->is_variable_public(varName);
+                env->declare_variable(varName, std::move(clonedArray), nullptr, mem, is_const, is_public);
+                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: variable redeclared successfully\n";
               }
-              // [DEBUG**]std::cout << "[interpret_member_expression] Deleting variable: " << dynamic_cast<ast::ReferenceExpression *>(mem->object)->name << "\n";
-              env->delete_variable(dynamic_cast<ast::ReferenceExpression *>(mem->object)->name, mem);
-              // [DEBUG**]std::cout << "[interpret_member_expression] Declaring variable: " << dynamic_cast<ast::ReferenceExpression *>(mem->object)->name << "\n";
-              std::cout << "[debug] In member expression append: re-declaring variable: "
-                        << dynamic_cast<ast::ReferenceExpression *>(mem->object)->name << "\n";
-              std::cout << "[debug] Array type: " << array_type << "\n";
-              std::cout << "[debug] Array size before re-declaration: " << arr_val->elements.size() << "\n";
-              std::cout << "[debug] Is returned: " << is_returned << "\n";
-              std::cout << "[debug] arr_val->elements: " << arr_val->elements.size() << "\n";
-              std::cout << "[debug] array_type: " << array_type << "\n";
-              auto made_unique = std::make_unique<array_value>(std::move(arr_val->elements), std::move(array_type), is_returned);
-              auto new_unique = std::unique_ptr<runtime_value>(std::move(made_unique));
-              if (auto array_ptr = dynamic_cast<array_value *>(new_unique.get()))
-              {
-                std::cout << "[debug] made_unique: " << array_ptr->elements.size() << "\n";
-              }
-              else
-              {
-                std::cout << "[debug] made_unique: unable to cast new_unique to array_value\n";
-              }
-              env->declare_variable(
-                  dynamic_cast<ast::ReferenceExpression *>(mem->object)->name,
-                  std::move(new_unique),
-                  new ast::Type(array_type),
-                  mem, false, false);
-              std::cout << "[debug] Re-declared variable: "
-                        << dynamic_cast<ast::ReferenceExpression *>(mem->object)->name
-                        << " with updated array.\n";
-              // [DEBUG**]std::cout << "[interpret_member_expression] Returning null value\n";
               return std::make_unique<null_value>(false);
             });
       }

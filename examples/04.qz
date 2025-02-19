@@ -15,10 +15,11 @@ fn fib (n: number) -> number {
   return c;
 }
 
-let nums: []any = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+let nums: []number = [];
 outln("nums before: ", nums);
-for (let num of nums) {
-  num = fib(num);
+alloc(nums, 10);
+for (let i = 1; i <= 10; i++) {
+  nums.append(fib(i));
 }
 outln("nums after: ", nums);
 outln("nums.length: ", nums.length);
@@ -28,7 +29,8 @@ let fibs = {
   two: fib(2),
   three: fib(3),
   incopy: in
-}
+};
+
 outln("one[]: ", fibs["one"]);
 outln("two: ", fibs.two);
 outln("three[]: ", fibs["three"]);

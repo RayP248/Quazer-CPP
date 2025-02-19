@@ -369,6 +369,12 @@ int main(int argc, char **argv)
     exit(1);
   }
 
+  if (global::currfile.rfind(".qz") != global::currfile.size() - 3)
+  {
+    std::cerr << "Invalid file type. Expected .qz file.";
+    exit(1);
+  }
+
   std::string input((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
   auto tokens = lexer::tokenize(input);
   error::display_all_errors(false);

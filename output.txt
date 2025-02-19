@@ -1,96 +1,21 @@
 Program {
   kind: "Program",
   body: [
-    VariableDeclarationStatement {
-      kind: 4,
-      linestart: 2,
-      lineend: 2,
-      columnstart: 0,
-      columnend: 24,
-      name: "x",
-      type: 
-        Type {
-          name: "",
-          generics: [],
-          is_inferred: 1,
-        },
-      value: 
-        BinaryExpression {
-          kind: 15,
-          linestart: 2,
-          lineend: 2,
-          columnstart: 18,
-          columnend: 23,
-          left:
-            NumberExpression {
-              kind: 9,
-              linestart: 2,
-              lineend: 2,
-              columnstart: 18,
-              columnend: 19,
-              value: 1.000000
-            },
-          op: {
-            kind: "PLUS",
-            value: "+",
-            linestart: 2,
-            lineend: 2,
-            columnstart: 20,
-            columnend: 21
-          },
-          right:
-            NumberExpression {
-              kind: 9,
-              linestart: 2,
-              lineend: 2,
-              columnstart: 22,
-              columnend: 23,
-              value: 1.000000
-            }
-        },
-      is_const: false,
-      is_public: false
-    },
-    VariableDeclarationStatement {
-      kind: 4,
-      linestart: 2,
-      lineend: 2,
-      columnstart: 25,
-      columnend: 47,
-      name: "one",
-      type: 
-        Type {
-          name: "string",
-          generics: [],
-          is_inferred: 1,
-        },
-      value: 
-        StringExpression {
-          kind: 12,
-          linestart: 2,
-          lineend: 2,
-          columnstart: 43,
-          columnend: 46,
-          value: "1"
-        },
-      is_const: false,
-      is_public: false
-    },
     FunctionDeclarationStatement {
       kind: 6,
-      linestart: 3,
-      lineend: 3,
-      columnstart: 0,
-      columnend: 51,
-      name: "add",
+      linestart: 1,
+      lineend: 16,
+      columnstart: 1,
+      columnend: 1,
+      name: "fib",
       parameters: [
         ExpressionStatement {
           kind: 2,
-          linestart: 3,
+          linestart: 1,
           lineend: 0,
-          columnstart: 7,
+          columnstart: 9,
           columnend: 0,
-          name: "x",
+          name: "n",
           type: 
             Type {
               name: "number",
@@ -102,67 +27,491 @@ Program {
       body: 
         BlockStatement {
           kind: 3,
-          linestart: 3,
-          lineend: 3,
-          columnstart: 28,
-          columnend: 51,
+          linestart: 1,
+          lineend: 16,
+          columnstart: 30,
+          columnend: 1,
           body: [
-            ReturnStatement {
-              kind: 5,
+            IfStatement {
+              kind: 7,
+              linestart: 2,
+              lineend: 2,
+              columnstart: 2,
+              columnend: 25,
+              condition:
+                BinaryExpression {
+                  kind: 15,
+                  linestart: 2,
+                  lineend: 2,
+                  columnstart: 5,
+                  columnend: 11,
+                  left:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 2,
+                      lineend: 2,
+                      columnstart: 5,
+                      columnend: 6,
+                      value: "n"
+                    },
+                  op: {
+                    kind: "EQUAL",
+                    value: "==",
+                    linestart: 2,
+                    lineend: 2,
+                    columnstart: 7,
+                    columnend: 9
+                  },
+                  right:
+                    NumberExpression {
+                      kind: 9,
+                      linestart: 2,
+                      lineend: 2,
+                      columnstart: 10,
+                      columnend: 11,
+                      value: 0.000000
+                    }
+                },
+              then_branch:
+                BlockStatement {
+                  kind: 3,
+                  linestart: 2,
+                  lineend: 2,
+                  columnstart: 12,
+                  columnend: 25,
+                  body: [
+                    ReturnStatement {
+                      kind: 5,
+                      linestart: 2,
+                      lineend: 2,
+                      columnstart: 14,
+                      columnend: 23,
+                      value:
+                        NumberExpression {
+                          kind: 9,
+                          linestart: 2,
+                          lineend: 2,
+                          columnstart: 21,
+                          columnend: 22,
+                          value: 0.000000
+                        }
+                    }
+                  ]
+                },
+              else_if_branch:
+,
+            IfStatement {
+              kind: 7,
               linestart: 3,
               lineend: 3,
-              columnstart: 30,
-              columnend: 49,
-              value:
+              columnstart: 2,
+              columnend: 25,
+              condition:
                 BinaryExpression {
                   kind: 15,
                   linestart: 3,
                   lineend: 3,
-                  columnstart: 37,
-                  columnend: 48,
+                  columnstart: 5,
+                  columnend: 11,
                   left:
                     SymbolExpression {
                       kind: 11,
                       linestart: 3,
                       lineend: 3,
-                      columnstart: 37,
-                      columnend: 38,
-                      value: "x"
+                      columnstart: 5,
+                      columnend: 6,
+                      value: "n"
                     },
                   op: {
-                    kind: "PLUS",
-                    value: "+",
+                    kind: "EQUAL",
+                    value: "==",
                     linestart: 3,
                     lineend: 3,
-                    columnstart: 39,
-                    columnend: 40
+                    columnstart: 7,
+                    columnend: 9
                   },
                   right:
-                    MemberExpression {
-                      kind: 19,
+                    NumberExpression {
+                      kind: 9,
                       linestart: 3,
                       lineend: 3,
-                      columnstart: 41,
-                      columnend: 48,,
-                      object:
-                        SymbolExpression {
-                          kind: 11,
+                      columnstart: 10,
+                      columnend: 11,
+                      value: 1.000000
+                    }
+                },
+              then_branch:
+                BlockStatement {
+                  kind: 3,
+                  linestart: 3,
+                  lineend: 3,
+                  columnstart: 12,
+                  columnend: 25,
+                  body: [
+                    ReturnStatement {
+                      kind: 5,
+                      linestart: 3,
+                      lineend: 3,
+                      columnstart: 14,
+                      columnend: 23,
+                      value:
+                        NumberExpression {
+                          kind: 9,
                           linestart: 3,
                           lineend: 3,
-                          columnstart: 41,
-                          columnend: 44,
-                          value: "one"
-                        },
-                      property:
-                        SymbolExpression {
-                          kind: 11,
-                          linestart: 3,
-                          lineend: 3,
-                          columnstart: 45,
-                          columnend: 48,
-                          value: "num"
+                          columnstart: 21,
+                          columnend: 22,
+                          value: 1.000000
                         }
                     }
+                  ]
+                },
+              else_if_branch:
+,
+            VariableDeclarationStatement {
+              kind: 4,
+              linestart: 5,
+              lineend: 5,
+              columnstart: 2,
+              columnend: 20,
+              name: "a",
+              type: 
+                Type {
+                  name: "number",
+                  generics: [],
+                  is_inferred: 1,
+                },
+              value: 
+                NumberExpression {
+                  kind: 9,
+                  linestart: 5,
+                  lineend: 5,
+                  columnstart: 18,
+                  columnend: 19,
+                  value: 0.000000
+                },
+              is_const: false,
+              is_public: false
+            },
+            VariableDeclarationStatement {
+              kind: 4,
+              linestart: 6,
+              lineend: 6,
+              columnstart: 2,
+              columnend: 20,
+              name: "b",
+              type: 
+                Type {
+                  name: "number",
+                  generics: [],
+                  is_inferred: 1,
+                },
+              value: 
+                NumberExpression {
+                  kind: 9,
+                  linestart: 6,
+                  lineend: 6,
+                  columnstart: 18,
+                  columnend: 19,
+                  value: 1.000000
+                },
+              is_const: false,
+              is_public: false
+            },
+            VariableDeclarationStatement {
+              kind: 4,
+              linestart: 7,
+              lineend: 7,
+              columnstart: 2,
+              columnend: 20,
+              name: "c",
+              type: 
+                Type {
+                  name: "number",
+                  generics: [],
+                  is_inferred: 1,
+                },
+              value: 
+                NumberExpression {
+                  kind: 9,
+                  linestart: 7,
+                  lineend: 7,
+                  columnstart: 18,
+                  columnend: 19,
+                  value: 0.000000
+                },
+              is_const: false,
+              is_public: false
+            },
+            ForLoopStatement {
+              kind: 8,
+              linestart: 9,
+              lineend: 13,
+              columnstart: 2,
+              columnend: 3,
+              initializer:
+                VariableDeclarationExpression {
+                  kind: 18,
+                  linestart: 9,
+                  lineend: 9,
+                  columnstart: 7,
+                  columnend: 16,,
+                  name: "i",
+                  type: 
+                    Type {
+                      name: "",
+                      generics: [],
+                      is_inferred: 1,
+                    },
+                  value: 
+                    NumberExpression {
+                      kind: 9,
+                      linestart: 9,
+                      lineend: 9,
+                      columnstart: 15,
+                      columnend: 16,
+                      value: 1.000000
+                    },
+                  is_const: false,
+                  is_public: false
+                },
+              condition:
+                BinaryExpression {
+                  kind: 15,
+                  linestart: 9,
+                  lineend: 9,
+                  columnstart: 18,
+                  columnend: 23,
+                  left:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 9,
+                      lineend: 9,
+                      columnstart: 18,
+                      columnend: 19,
+                      value: "i"
+                    },
+                  op: {
+                    kind: "LESS",
+                    value: "<",
+                    linestart: 9,
+                    lineend: 9,
+                    columnstart: 20,
+                    columnend: 21
+                  },
+                  right:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 9,
+                      lineend: 9,
+                      columnstart: 22,
+                      columnend: 23,
+                      value: "n"
+                    }
+                },
+              post:
+                AssignmentExpression {
+                  kind: 17,
+                  linestart: 9,
+                  lineend: 9,
+                  columnstart: 25,
+                  columnend: 28,,
+                  left:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 9,
+                      lineend: 9,
+                      columnstart: 25,
+                      columnend: 26,
+                      value: "i"
+                    },
+                  op: {
+                    kind: "PLUS_PLUS",
+                    value: "++",
+                    linestart: 9,
+                    lineend: 9,
+                    columnstart: 26,
+                    columnend: 28
+                  },
+                  right:
+,
+                  increment_decrement: true
+                },
+              body:
+                BlockStatement {
+                  kind: 3,
+                  linestart: 9,
+                  lineend: 13,
+                  columnstart: 30,
+                  columnend: 3,
+                  body: [
+                    ExpressionStatement {
+                      kind: 2,
+                      linestart: 10,
+                      lineend: 10,
+                      columnstart: 4,
+                      columnend: 13,
+                      expression:
+                        AssignmentExpression {
+                          kind: 17,
+                          linestart: 10,
+                          lineend: 10,
+                          columnstart: 4,
+                          columnend: 13,,
+                          left:
+                            SymbolExpression {
+                              kind: 11,
+                              linestart: 10,
+                              lineend: 10,
+                              columnstart: 4,
+                              columnend: 5,
+                              value: "c"
+                            },
+                          op: {
+                            kind: "ASSIGNMENT",
+                            value: "=",
+                            linestart: 10,
+                            lineend: 10,
+                            columnstart: 6,
+                            columnend: 7
+                          },
+                          right:
+                            BinaryExpression {
+                              kind: 15,
+                              linestart: 10,
+                              lineend: 10,
+                              columnstart: 8,
+                              columnend: 13,
+                              left:
+                                SymbolExpression {
+                                  kind: 11,
+                                  linestart: 10,
+                                  lineend: 10,
+                                  columnstart: 8,
+                                  columnend: 9,
+                                  value: "a"
+                                },
+                              op: {
+                                kind: "PLUS",
+                                value: "+",
+                                linestart: 10,
+                                lineend: 10,
+                                columnstart: 10,
+                                columnend: 11
+                              },
+                              right:
+                                SymbolExpression {
+                                  kind: 11,
+                                  linestart: 10,
+                                  lineend: 10,
+                                  columnstart: 12,
+                                  columnend: 13,
+                                  value: "b"
+                                }
+                            },
+                          increment_decrement: false
+                        }
+                    },
+                    ExpressionStatement {
+                      kind: 2,
+                      linestart: 11,
+                      lineend: 11,
+                      columnstart: 4,
+                      columnend: 9,
+                      expression:
+                        AssignmentExpression {
+                          kind: 17,
+                          linestart: 11,
+                          lineend: 11,
+                          columnstart: 4,
+                          columnend: 9,,
+                          left:
+                            SymbolExpression {
+                              kind: 11,
+                              linestart: 11,
+                              lineend: 11,
+                              columnstart: 4,
+                              columnend: 5,
+                              value: "a"
+                            },
+                          op: {
+                            kind: "ASSIGNMENT",
+                            value: "=",
+                            linestart: 11,
+                            lineend: 11,
+                            columnstart: 6,
+                            columnend: 7
+                          },
+                          right:
+                            SymbolExpression {
+                              kind: 11,
+                              linestart: 11,
+                              lineend: 11,
+                              columnstart: 8,
+                              columnend: 9,
+                              value: "b"
+                            },
+                          increment_decrement: false
+                        }
+                    },
+                    ExpressionStatement {
+                      kind: 2,
+                      linestart: 12,
+                      lineend: 12,
+                      columnstart: 4,
+                      columnend: 9,
+                      expression:
+                        AssignmentExpression {
+                          kind: 17,
+                          linestart: 12,
+                          lineend: 12,
+                          columnstart: 4,
+                          columnend: 9,,
+                          left:
+                            SymbolExpression {
+                              kind: 11,
+                              linestart: 12,
+                              lineend: 12,
+                              columnstart: 4,
+                              columnend: 5,
+                              value: "b"
+                            },
+                          op: {
+                            kind: "ASSIGNMENT",
+                            value: "=",
+                            linestart: 12,
+                            lineend: 12,
+                            columnstart: 6,
+                            columnend: 7
+                          },
+                          right:
+                            SymbolExpression {
+                              kind: 11,
+                              linestart: 12,
+                              lineend: 12,
+                              columnstart: 8,
+                              columnend: 9,
+                              value: "c"
+                            },
+                          increment_decrement: false
+                        }
+                    }
+                  ]
+                },
+            ReturnStatement {
+              kind: 5,
+              linestart: 15,
+              lineend: 15,
+              columnstart: 2,
+              columnend: 11,
+              value:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 15,
+                  lineend: 15,
+                  columnstart: 9,
+                  columnend: 10,
+                  value: "c"
                 }
             }
           ]
@@ -177,132 +526,1202 @@ Program {
     },
     VariableDeclarationStatement {
       kind: 4,
-      linestart: 4,
-      lineend: 4,
+      linestart: 18,
+      lineend: 18,
       columnstart: 0,
-      columnend: 28,
-      name: "addRes",
+      columnend: 24,
+      name: "nums",
       type: 
         Type {
-          name: "number",
+          name: "",
           generics: [],
           is_inferred: 1,
         },
       value: 
-        CallExpression {
-          kind: 16,
-          linestart: 4,
-          lineend: 4,
+        ArrayExpression {
+          kind: 13,
+          linestart: 18,
+          lineend: 18,
           columnstart: 21,
-          columnend: 27,
-          function:
-            SymbolExpression {
-              kind: 11,
-              linestart: 4,
-              lineend: 4,
-              columnstart: 21,
-              columnend: 24,
-              value: "add"
-            },
-          args: [
-            NumberExpression {
-              kind: 9,
-              linestart: 4,
-              lineend: 4,
-              columnstart: 25,
-              columnend: 26,
-              value: 1.000000
-            }
+          columnend: 22,
+          elements: [
+
           ]
         },
       is_const: false,
       is_public: false
     },
-    IfStatement {
-      kind: 7,
-      linestart: 5,
-      lineend: 5,
+    ExpressionStatement {
+      kind: 2,
+      linestart: 19,
+      lineend: 19,
       columnstart: 0,
-      columnend: 37,
+      columnend: 28,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 19,
+          lineend: 19,
+          columnstart: 0,
+          columnend: 28,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 19,
+              lineend: 19,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 19,
+              lineend: 19,
+              columnstart: 6,
+              columnend: 21,
+              value: "nums before: "
+            },
+            SymbolExpression {
+              kind: 11,
+              linestart: 19,
+              lineend: 19,
+              columnstart: 23,
+              columnend: 27,
+              value: "nums"
+            }
+          ]
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 20,
+      lineend: 20,
+      columnstart: 0,
+      columnend: 15,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 20,
+          lineend: 20,
+          columnstart: 0,
+          columnend: 15,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 20,
+              lineend: 20,
+              columnstart: 0,
+              columnend: 5,
+              value: "alloc"
+            },
+          args: [
+            SymbolExpression {
+              kind: 11,
+              linestart: 20,
+              lineend: 20,
+              columnstart: 6,
+              columnend: 10,
+              value: "nums"
+            },
+            NumberExpression {
+              kind: 9,
+              linestart: 20,
+              lineend: 20,
+              columnstart: 12,
+              columnend: 14,
+              value: 10.000000
+            }
+          ]
+        }
+    },
+    ForLoopStatement {
+      kind: 8,
+      linestart: 21,
+      lineend: 23,
+      columnstart: 0,
+      columnend: 1,
+      initializer:
+        VariableDeclarationExpression {
+          kind: 18,
+          linestart: 21,
+          lineend: 21,
+          columnstart: 5,
+          columnend: 14,,
+          name: "i",
+          type: 
+            Type {
+              name: "",
+              generics: [],
+              is_inferred: 1,
+            },
+          value: 
+            NumberExpression {
+              kind: 9,
+              linestart: 21,
+              lineend: 21,
+              columnstart: 13,
+              columnend: 14,
+              value: 1.000000
+            },
+          is_const: false,
+          is_public: false
+        },
       condition:
         BinaryExpression {
           kind: 15,
-          linestart: 5,
-          lineend: 5,
-          columnstart: 3,
-          columnend: 14,
+          linestart: 21,
+          lineend: 21,
+          columnstart: 16,
+          columnend: 23,
           left:
             SymbolExpression {
               kind: 11,
-              linestart: 5,
-              lineend: 5,
-              columnstart: 3,
-              columnend: 4,
-              value: "x"
+              linestart: 21,
+              lineend: 21,
+              columnstart: 16,
+              columnend: 17,
+              value: "i"
             },
           op: {
-            kind: "EQUAL",
-            value: "==",
-            linestart: 5,
-            lineend: 5,
-            columnstart: 5,
-            columnend: 7
+            kind: "LESS_EQUAL",
+            value: "<=",
+            linestart: 21,
+            lineend: 21,
+            columnstart: 18,
+            columnend: 20
           },
           right:
-            SymbolExpression {
-              kind: 11,
-              linestart: 5,
-              lineend: 5,
-              columnstart: 8,
-              columnend: 14,
-              value: "addRes"
+            NumberExpression {
+              kind: 9,
+              linestart: 21,
+              lineend: 21,
+              columnstart: 21,
+              columnend: 23,
+              value: 10.000000
             }
         },
-      then_branch:
+      post:
+        AssignmentExpression {
+          kind: 17,
+          linestart: 21,
+          lineend: 21,
+          columnstart: 25,
+          columnend: 28,,
+          left:
+            SymbolExpression {
+              kind: 11,
+              linestart: 21,
+              lineend: 21,
+              columnstart: 25,
+              columnend: 26,
+              value: "i"
+            },
+          op: {
+            kind: "PLUS_PLUS",
+            value: "++",
+            linestart: 21,
+            lineend: 21,
+            columnstart: 26,
+            columnend: 28
+          },
+          right:
+,
+          increment_decrement: true
+        },
+      body:
         BlockStatement {
           kind: 3,
-          linestart: 5,
-          lineend: 5,
-          columnstart: 16,
-          columnend: 37,
+          linestart: 21,
+          lineend: 23,
+          columnstart: 30,
+          columnend: 1,
           body: [
             ExpressionStatement {
               kind: 2,
-              linestart: 5,
-              lineend: 5,
-              columnstart: 18,
-              columnend: 34,
+              linestart: 22,
+              lineend: 22,
+              columnstart: 2,
+              columnend: 21,
               expression:
                 CallExpression {
                   kind: 16,
-                  linestart: 5,
-                  lineend: 5,
-                  columnstart: 18,
-                  columnend: 34,
+                  linestart: 22,
+                  lineend: 22,
+                  columnstart: 2,
+                  columnend: 21,
                   function:
-                    SymbolExpression {
-                      kind: 11,
-                      linestart: 5,
-                      lineend: 5,
-                      columnstart: 18,
-                      columnend: 23,
-                      value: "outln"
+                    MemberExpression {
+                      kind: 19,
+                      linestart: 22,
+                      lineend: 22,
+                      columnstart: 2,
+                      columnend: 13,,
+                      object:
+                        SymbolExpression {
+                          kind: 11,
+                          linestart: 22,
+                          lineend: 22,
+                          columnstart: 2,
+                          columnend: 6,
+                          value: "nums"
+                        },
+                      property:
+                        SymbolExpression {
+                          kind: 11,
+                          linestart: 22,
+                          lineend: 22,
+                          columnstart: 7,
+                          columnend: 13,
+                          value: "append"
+                        }
                     },
                   args: [
-                    StringExpression {
-                      kind: 12,
-                      linestart: 5,
-                      lineend: 5,
-                      columnstart: 24,
-                      columnend: 33,
-                      value: "matches"
+                    CallExpression {
+                      kind: 16,
+                      linestart: 22,
+                      lineend: 22,
+                      columnstart: 14,
+                      columnend: 20,
+                      function:
+                        SymbolExpression {
+                          kind: 11,
+                          linestart: 22,
+                          lineend: 22,
+                          columnstart: 14,
+                          columnend: 17,
+                          value: "fib"
+                        },
+                      args: [
+                        SymbolExpression {
+                          kind: 11,
+                          linestart: 22,
+                          lineend: 22,
+                          columnstart: 18,
+                          columnend: 19,
+                          value: "i"
+                        }
+                      ]
                     }
                   ]
                 }
             }
           ]
         },
-      else_if_branch:
-
+    ExpressionStatement {
+      kind: 2,
+      linestart: 24,
+      lineend: 24,
+      columnstart: 0,
+      columnend: 27,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 24,
+          lineend: 24,
+          columnstart: 0,
+          columnend: 27,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 24,
+              lineend: 24,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 24,
+              lineend: 24,
+              columnstart: 6,
+              columnend: 20,
+              value: "nums after: "
+            },
+            SymbolExpression {
+              kind: 11,
+              linestart: 24,
+              lineend: 24,
+              columnstart: 22,
+              columnend: 26,
+              value: "nums"
+            }
+          ]
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 25,
+      lineend: 25,
+      columnstart: 0,
+      columnend: 35,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 25,
+          lineend: 25,
+          columnstart: 0,
+          columnend: 35,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 25,
+              lineend: 25,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 25,
+              lineend: 25,
+              columnstart: 6,
+              columnend: 21,
+              value: "nums.length: "
+            },
+            MemberExpression {
+              kind: 19,
+              linestart: 25,
+              lineend: 25,
+              columnstart: 23,
+              columnend: 34,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 25,
+                  lineend: 25,
+                  columnstart: 23,
+                  columnend: 27,
+                  value: "nums"
+                },
+              property:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 25,
+                  lineend: 25,
+                  columnstart: 28,
+                  columnend: 34,
+                  value: "length"
+                }
+            }
+          ]
+        }
+    },
+    VariableDeclarationStatement {
+      kind: 4,
+      linestart: 27,
+      lineend: 32,
+      columnstart: 0,
+      columnend: 2,
+      name: "fibs",
+      type: 
+        Type {
+          name: "",
+          generics: [],
+          is_inferred: 1,
+        },
+      value: 
+        ObjectExpression {
+          kind: 14,
+          linestart: 27,
+          lineend: 32,
+          columnstart: 11,
+          columnend: 1,
+          properties: [
+            Property {
+              key:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 28,
+                  lineend: 28,
+                  columnstart: 2,
+                  columnend: 5,
+                  value: "one"
+                },
+              value:
+                CallExpression {
+                  kind: 16,
+                  linestart: 28,
+                  lineend: 28,
+                  columnstart: 7,
+                  columnend: 13,
+                  function:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 28,
+                      lineend: 28,
+                      columnstart: 7,
+                      columnend: 10,
+                      value: "fib"
+                    },
+                  args: [
+                    NumberExpression {
+                      kind: 9,
+                      linestart: 28,
+                      lineend: 28,
+                      columnstart: 11,
+                      columnend: 12,
+                      value: 1.000000
+                    }
+                  ]
+                }
+            },
+            Property {
+              key:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 29,
+                  lineend: 29,
+                  columnstart: 2,
+                  columnend: 5,
+                  value: "two"
+                },
+              value:
+                CallExpression {
+                  kind: 16,
+                  linestart: 29,
+                  lineend: 29,
+                  columnstart: 7,
+                  columnend: 13,
+                  function:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 29,
+                      lineend: 29,
+                      columnstart: 7,
+                      columnend: 10,
+                      value: "fib"
+                    },
+                  args: [
+                    NumberExpression {
+                      kind: 9,
+                      linestart: 29,
+                      lineend: 29,
+                      columnstart: 11,
+                      columnend: 12,
+                      value: 2.000000
+                    }
+                  ]
+                }
+            },
+            Property {
+              key:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 30,
+                  lineend: 30,
+                  columnstart: 2,
+                  columnend: 7,
+                  value: "three"
+                },
+              value:
+                CallExpression {
+                  kind: 16,
+                  linestart: 30,
+                  lineend: 30,
+                  columnstart: 9,
+                  columnend: 15,
+                  function:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 30,
+                      lineend: 30,
+                      columnstart: 9,
+                      columnend: 12,
+                      value: "fib"
+                    },
+                  args: [
+                    NumberExpression {
+                      kind: 9,
+                      linestart: 30,
+                      lineend: 30,
+                      columnstart: 13,
+                      columnend: 14,
+                      value: 3.000000
+                    }
+                  ]
+                }
+            },
+            Property {
+              key:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 31,
+                  lineend: 31,
+                  columnstart: 2,
+                  columnend: 8,
+                  value: "incopy"
+                },
+              value:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 31,
+                  lineend: 31,
+                  columnstart: 10,
+                  columnend: 12,
+                  value: "in"
+                }
+            }
+          ]
+        },
+      is_const: false,
+      is_public: false
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 34,
+      lineend: 34,
+      columnstart: 0,
+      columnend: 29,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 34,
+          lineend: 34,
+          columnstart: 0,
+          columnend: 29,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 34,
+              lineend: 34,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 34,
+              lineend: 34,
+              columnstart: 6,
+              columnend: 15,
+              value: "one[]: "
+            },
+            MemberExpression {
+              kind: 19,
+              linestart: 34,
+              lineend: 34,
+              columnstart: 17,
+              columnend: 28,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 34,
+                  lineend: 34,
+                  columnstart: 17,
+                  columnend: 21,
+                  value: "fibs"
+                },
+              property:
+                StringExpression {
+                  kind: 12,
+                  linestart: 34,
+                  lineend: 34,
+                  columnstart: 22,
+                  columnend: 27,
+                  value: "one"
+                }
+            }
+          ]
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 35,
+      lineend: 35,
+      columnstart: 0,
+      columnend: 24,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 35,
+          lineend: 35,
+          columnstart: 0,
+          columnend: 24,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 35,
+              lineend: 35,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 35,
+              lineend: 35,
+              columnstart: 6,
+              columnend: 13,
+              value: "two: "
+            },
+            MemberExpression {
+              kind: 19,
+              linestart: 35,
+              lineend: 35,
+              columnstart: 15,
+              columnend: 23,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 35,
+                  lineend: 35,
+                  columnstart: 15,
+                  columnend: 19,
+                  value: "fibs"
+                },
+              property:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 35,
+                  lineend: 35,
+                  columnstart: 20,
+                  columnend: 23,
+                  value: "two"
+                }
+            }
+          ]
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 36,
+      lineend: 36,
+      columnstart: 0,
+      columnend: 33,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 36,
+          lineend: 36,
+          columnstart: 0,
+          columnend: 33,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 36,
+              lineend: 36,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 36,
+              lineend: 36,
+              columnstart: 6,
+              columnend: 17,
+              value: "three[]: "
+            },
+            MemberExpression {
+              kind: 19,
+              linestart: 36,
+              lineend: 36,
+              columnstart: 19,
+              columnend: 32,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 36,
+                  lineend: 36,
+                  columnstart: 19,
+                  columnend: 23,
+                  value: "fibs"
+                },
+              property:
+                StringExpression {
+                  kind: 12,
+                  linestart: 36,
+                  lineend: 36,
+                  columnstart: 24,
+                  columnend: 31,
+                  value: "three"
+                }
+            }
+          ]
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 37,
+      lineend: 37,
+      columnstart: 0,
+      columnend: 21,
+      expression:
+        AssignmentExpression {
+          kind: 17,
+          linestart: 37,
+          lineend: 37,
+          columnstart: 0,
+          columnend: 21,,
+          left:
+            MemberExpression {
+              kind: 19,
+              linestart: 37,
+              lineend: 37,
+              columnstart: 0,
+              columnend: 12,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 37,
+                  lineend: 37,
+                  columnstart: 0,
+                  columnend: 4,
+                  value: "fibs"
+                },
+              property:
+                StringExpression {
+                  kind: 12,
+                  linestart: 37,
+                  lineend: 37,
+                  columnstart: 5,
+                  columnend: 11,
+                  value: "four"
+                }
+            },
+          op: {
+            kind: "ASSIGNMENT",
+            value: "=",
+            linestart: 37,
+            lineend: 37,
+            columnstart: 13,
+            columnend: 14
+          },
+          right:
+            CallExpression {
+              kind: 16,
+              linestart: 37,
+              lineend: 37,
+              columnstart: 15,
+              columnend: 21,
+              function:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 37,
+                  lineend: 37,
+                  columnstart: 15,
+                  columnend: 18,
+                  value: "fib"
+                },
+              args: [
+                NumberExpression {
+                  kind: 9,
+                  linestart: 37,
+                  lineend: 37,
+                  columnstart: 19,
+                  columnend: 20,
+                  value: 4.000000
+                }
+              ]
+            },
+          increment_decrement: false
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 38,
+      lineend: 38,
+      columnstart: 0,
+      columnend: 26,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 38,
+          lineend: 38,
+          columnstart: 0,
+          columnend: 26,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 38,
+              lineend: 38,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 38,
+              lineend: 38,
+              columnstart: 6,
+              columnend: 14,
+              value: "four: "
+            },
+            MemberExpression {
+              kind: 19,
+              linestart: 38,
+              lineend: 38,
+              columnstart: 16,
+              columnend: 25,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 38,
+                  lineend: 38,
+                  columnstart: 16,
+                  columnend: 20,
+                  value: "fibs"
+                },
+              property:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 38,
+                  lineend: 38,
+                  columnstart: 21,
+                  columnend: 25,
+                  value: "four"
+                }
+            }
+          ]
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 39,
+      lineend: 39,
+      columnstart: 0,
+      columnend: 18,
+      expression:
+        AssignmentExpression {
+          kind: 17,
+          linestart: 39,
+          lineend: 39,
+          columnstart: 0,
+          columnend: 18,,
+          left:
+            MemberExpression {
+              kind: 19,
+              linestart: 39,
+              lineend: 39,
+              columnstart: 0,
+              columnend: 9,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 39,
+                  lineend: 39,
+                  columnstart: 0,
+                  columnend: 4,
+                  value: "fibs"
+                },
+              property:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 39,
+                  lineend: 39,
+                  columnstart: 5,
+                  columnend: 9,
+                  value: "five"
+                }
+            },
+          op: {
+            kind: "ASSIGNMENT",
+            value: "=",
+            linestart: 39,
+            lineend: 39,
+            columnstart: 10,
+            columnend: 11
+          },
+          right:
+            CallExpression {
+              kind: 16,
+              linestart: 39,
+              lineend: 39,
+              columnstart: 12,
+              columnend: 18,
+              function:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 39,
+                  lineend: 39,
+                  columnstart: 12,
+                  columnend: 15,
+                  value: "fib"
+                },
+              args: [
+                NumberExpression {
+                  kind: 9,
+                  linestart: 39,
+                  lineend: 39,
+                  columnstart: 16,
+                  columnend: 17,
+                  value: 5.000000
+                }
+              ]
+            },
+          increment_decrement: false
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 40,
+      lineend: 40,
+      columnstart: 0,
+      columnend: 38,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 40,
+          lineend: 40,
+          columnstart: 0,
+          columnend: 38,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 40,
+              lineend: 40,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 40,
+              lineend: 40,
+              columnstart: 6,
+              columnend: 16,
+              value: "five[]: "
+            },
+            MemberExpression {
+              kind: 19,
+              linestart: 40,
+              lineend: 40,
+              columnstart: 18,
+              columnend: 37,,
+              object:
+                MemberExpression {
+                  kind: 19,
+                  linestart: 40,
+                  lineend: 40,
+                  columnstart: 18,
+                  columnend: 30,,
+                  object:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 40,
+                      lineend: 40,
+                      columnstart: 18,
+                      columnend: 22,
+                      value: "fibs"
+                    },
+                  property:
+                    StringExpression {
+                      kind: 12,
+                      linestart: 40,
+                      lineend: 40,
+                      columnstart: 23,
+                      columnend: 29,
+                      value: "five"
+                    }
+                },
+              property:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 40,
+                  lineend: 40,
+                  columnstart: 31,
+                  columnend: 37,
+                  value: "string"
+                }
+            }
+          ]
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 41,
+      lineend: 41,
+      columnstart: 0,
+      columnend: 136,
+      expression:
+        AssignmentExpression {
+          kind: 17,
+          linestart: 41,
+          lineend: 41,
+          columnstart: 0,
+          columnend: 136,,
+          left:
+            MemberExpression {
+              kind: 19,
+              linestart: 41,
+              lineend: 41,
+              columnstart: 0,
+              columnend: 8,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 41,
+                  lineend: 41,
+                  columnstart: 0,
+                  columnend: 4,
+                  value: "fibs"
+                },
+              property:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 41,
+                  lineend: 41,
+                  columnstart: 5,
+                  columnend: 8,
+                  value: "six"
+                }
+            },
+          op: {
+            kind: "ASSIGNMENT",
+            value: "=",
+            linestart: 41,
+            lineend: 41,
+            columnstart: 9,
+            columnend: 10
+          },
+          right:
+            CallExpression {
+              kind: 16,
+              linestart: 41,
+              lineend: 41,
+              columnstart: 11,
+              columnend: 136,
+              function:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 41,
+                  lineend: 41,
+                  columnstart: 11,
+                  columnend: 14,
+                  value: "fib"
+                },
+              args: [
+                MemberExpression {
+                  kind: 19,
+                  linestart: 41,
+                  lineend: 41,
+                  columnstart: 15,
+                  columnend: 135,,
+                  object:
+                    CallExpression {
+                      kind: 16,
+                      linestart: 41,
+                      lineend: 41,
+                      columnstart: 15,
+                      columnend: 131,
+                      function:
+                        MemberExpression {
+                          kind: 19,
+                          linestart: 41,
+                          lineend: 41,
+                          columnstart: 15,
+                          columnend: 26,,
+                          object:
+                            SymbolExpression {
+                              kind: 11,
+                              linestart: 41,
+                              lineend: 41,
+                              columnstart: 15,
+                              columnend: 19,
+                              value: "fibs"
+                            },
+                          property:
+                            SymbolExpression {
+                              kind: 11,
+                              linestart: 41,
+                              lineend: 41,
+                              columnstart: 20,
+                              columnend: 26,
+                              value: "incopy"
+                            }
+                        },
+                      args: [
+                        StringExpression {
+                          kind: 12,
+                          linestart: 41,
+                          lineend: 41,
+                          columnstart: 27,
+                          columnend: 130,
+                          value: "Enter a number to be converted into the nth number in the Fibonacci Sequence and stored in fibs.six: "
+                        }
+                      ]
+                    },
+                  property:
+                    SymbolExpression {
+                      kind: 11,
+                      linestart: 41,
+                      lineend: 41,
+                      columnstart: 132,
+                      columnend: 135,
+                      value: "num"
+                    }
+                }
+              ]
+            },
+          increment_decrement: false
+        }
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 42,
+      lineend: 42,
+      columnstart: 0,
+      columnend: 24,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 42,
+          lineend: 42,
+          columnstart: 0,
+          columnend: 24,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 42,
+              lineend: 42,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 42,
+              lineend: 42,
+              columnstart: 6,
+              columnend: 13,
+              value: "fib: "
+            },
+            MemberExpression {
+              kind: 19,
+              linestart: 42,
+              lineend: 42,
+              columnstart: 15,
+              columnend: 23,,
+              object:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 42,
+                  lineend: 42,
+                  columnstart: 15,
+                  columnend: 19,
+                  value: "fibs"
+                },
+              property:
+                SymbolExpression {
+                  kind: 11,
+                  linestart: 42,
+                  lineend: 42,
+                  columnstart: 20,
+                  columnend: 23,
+                  value: "six"
+                }
+            }
+          ]
+        }
+    }
   ]
 }

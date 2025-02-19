@@ -1,5 +1,5 @@
 -- This is an example of all error highlighting added so far:
-let x: []number = 1 + 1; let one: string = "1";
+let x: number = 1 + 1; let one: string = "1";
 fn add(x: number) -> number { return x + one.num; }
 let addRes: number = add(1);
-const res = x == addRes; if (res == true) { outln("matches"); }@
+const res = x == addRes; if (res == true) { outln("matches"); }

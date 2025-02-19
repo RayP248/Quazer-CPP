@@ -3,9 +3,15 @@
 
 #include <string>
 #include <vector>
+#include <variant>
+#include "../ast/ast.h"
+#include "../interpreter/interpreter.h"
 
 namespace type_checker {
-  typedef std::string Type;
+  template <typename... Values>
+  bool is_matching_type(ast::Type type, Values... args);
+  bool is_matching_type(const ast::Type &r1, const interpreter::runtime_value &r2);
+  bool is_matching_type(const interpreter::runtime_value &r1, const interpreter::runtime_value &r2);
 }
 
 #endif
