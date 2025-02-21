@@ -539,7 +539,7 @@ namespace parser
   }
   ast::Statement *parse_if_statement(parser_ &parser)
   {
-    lexer::Token keyword = parser.expect(lexer::TokenKind::IF, "parser.cpp : parse_if_statement() : Expected 'if' keyword"); /* [DEBUG**] */
+    lexer::Token keyword = parser.expect(lexer::TokenKind::IF, "parser.cpp : parse_if_statement() : Expected 'if' keyword"); // [DEBUG**]
     ast::IfStatement *if_stmt = new ast::IfStatement();
     if_stmt->linestart = keyword.linestart;
     if_stmt->columnstart = keyword.columnstart;

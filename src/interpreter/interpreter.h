@@ -8,6 +8,7 @@
 #include <variant>
 #include <memory>
 #include <functional>
+#include <optional>
 #include <fstream>
 #include <iostream>
 #include "../ast/ast.h"
@@ -262,11 +263,14 @@ namespace interpreter
   struct native_function_value : runtime_value
   {
     std::string name;
-    std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &, ast::Expression &)> body;
+    std::string return_type;
+    std::function<std::unique_ptr<runtime_value>(const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &, ast::Expression &, Environment *)> body;
     size_t arity;
-    native_function_value(std::string name, int arity, std::function<std::unique_ptr<runtime_value>(const std::vector<std::unique_ptr<runtime_value>> &, ast::Expression &)> body)
+
+    native_function_value(std::string name, std::string return_type, int arity, std::function<std::unique_ptr<runtime_value>(const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &, ast::Expression &, Environment *)> body)
     {
       this->name = name;
+      this->return_type = return_type;
       this->arity = arity;
       this->body = body;
       type = "native_function";
@@ -293,7 +297,7 @@ namespace interpreter
 
   struct array_value : runtime_value
   {
-    std::vector<std::unique_ptr<runtime_value>> elements;
+    std::vector<std::unique_ptr<runtime_value>> elements; // changed to unique_ptr
     array_value()
     {
       returned_value = false;
@@ -328,6 +332,15 @@ namespace interpreter
       returned_value = is_returned;
       this->type = type;
     }
+    array_value(const array_value &other)
+    {
+      for (const auto &element : other.elements)
+      {
+        elements.push_back(element->clone());
+      }
+      type = other.type;
+    }
+
     std::string to_string() const override
     {
       std::string str = "[";
@@ -344,37 +357,14 @@ namespace interpreter
     }
     std::unique_ptr<runtime_value> clone() const override
     {
-      /* [DEBUG**] */ std::cout << "[DEBUG**] Starting clone() of array_value, type: " << type << ", elements count: " << elements.size() << "\n";
-      static thread_local int clone_depth = 0;
-      /* [DEBUG**] */ std::cout << "[DEBUG**] Current clone depth: " << clone_depth << "\n";
-      const int CLONE_DEPTH_LIMIT = 1000;
-      /* [DEBUG**] */ std::cout << "[DEBUG**] Clone depth limit: " << CLONE_DEPTH_LIMIT << "\n";
-      if (clone_depth > CLONE_DEPTH_LIMIT)
+      auto new_arr = std::make_unique<array_value>(*this);
+      // Optionally deep-clone each element:
+      for (size_t i = 0; i < new_arr->elements.size(); i++)
       {
-        /* [DEBUG**] */ std::cout << "[DEBUG**] Clone depth limit reached (" << clone_depth << "), returning null_value\n";
-        return std::make_unique<null_value>();
+        new_arr->elements[i] = std::unique_ptr<runtime_value>(
+            this->elements[i]->clone().release());
       }
-      clone_depth++;
-      /* [DEBUG**] */ std::cout << "[DEBUG**] Starting clone() of array_value, type: " << type
-                                << ", elements count: " << elements.size() << ", clone depth: " << clone_depth << "\n";
-      std::vector<std::unique_ptr<runtime_value>> cloned_elements;
-      cloned_elements.reserve(elements.size());
-      for (size_t i = 0; i < elements.size(); i++)
-      {
-        /* [DEBUG**] */ std::cout << "[DEBUG**] Cloning element index " << i << ", element type: " << elements[i]->type << "\n";
-        if (elements[i].get() == this) // self-reference detected
-        {
-          /* [DEBUG**] */ std::cout << "[DEBUG**] Self-reference detected at index " << i << ", inserting null_value\n";
-          cloned_elements.push_back(std::make_unique<null_value>());
-        }
-        else
-        {
-          cloned_elements.push_back(elements[i]->clone());
-        }
-      }
-      /* [DEBUG**] */ std::cout << "[DEBUG**] Finished clone() of array_value at depth " << clone_depth << "\n";
-      clone_depth--;
-      return std::make_unique<array_value>(std::move(cloned_elements), type, returned_value);
+      return new_arr;
     }
   };
 

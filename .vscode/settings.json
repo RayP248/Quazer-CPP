@@ -59,7 +59,11 @@
     "xloctime": "cpp",
     "iomanip": "cpp",
     "functional": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "map": "cpp",
+    "unordered_set": "cpp",
+    "xtree": "cpp",
+    "optional": "cpp"
   },
   "C_Cpp.errorSquiggles": "enabled"
 }

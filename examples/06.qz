@@ -1,0 +1,19 @@
+-*
+  Allocation and freeing example
+*-
+
+-- String example:
+let str: string = "hello";
+alloc(str, 10); -- Allocate 10 characters to str
+-- free(str); -- This deletes str.
+outln(str);
+
+
+--Array example:
+let numbers: []number = [];
+outln(numbers);
+alloc(numbers, 100000);
+for (let i = 0; i < 100000; i++) {
+  numbers.append(i);
+}
+outln(numbers);

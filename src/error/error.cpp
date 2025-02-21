@@ -72,9 +72,9 @@ namespace error
     setColor(31); // red
     std::cout << "Error";
     setColor(34); // blue
-    std::cout << " [" << global::currfile << "]: ";
+    std::cout << " [" << global::currfile << ":" << finalLine << ":" << finalCol << "]: ";
     resetColor();
-    std::cout << message << (finalLine.length() > 1 ? " on lines " + finalLine : " on line " + finalLine) << " through columns " << finalCol << '\n'
+    std::cout << message << '\n'
               << " |    - from " << origin << '\n';
 
     // new snippet display
@@ -96,7 +96,7 @@ namespace error
           highlightLine(lines[i]);
           std::cout << "\n";
         }
-        highlightErrorLocation(columnstart, columnend);
+        highlightErrorLocation(columnstart - 1, columnend - 1);
       }
       std::cout << '\n'
                 << " " << (last ? " " : "|") << "-----------------------------------------\n";

@@ -17,7 +17,7 @@ fn fib (n: number) -> number {
 
 let nums: []number = [];
 outln("nums before: ", nums);
-alloc(nums, 10);
+nums = alloc(nums, 10);
 for (let i = 1; i <= 10; i++) {
   nums.append(fib(i));
 }

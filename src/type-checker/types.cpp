@@ -30,4 +30,25 @@ namespace type_checker
       return true;
     return r1.type == r2.type;
   }
+  std::vector<std::string> split_type(const std::string &type)
+  {
+    std::vector<std::string> types;
+    std::string type_str = "";
+    for (size_t i = 0; i < type.size(); i++)
+    {
+      if (type[i] == ' ')
+        continue;
+      else if (type[i] == '|')
+      {
+        types.push_back(type_str);
+        type_str = "";
+      }
+      else
+      {
+        type_str += type[i];
+      }
+    }
+    types.push_back(type_str);
+    return types;
+  }
 } // namespace type_checker

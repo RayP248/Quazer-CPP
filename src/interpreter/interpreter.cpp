@@ -9,7 +9,6 @@
 #include "../type-checker/types.h"
 #include <algorithm>
 #include <cstdlib> // For malloc and free
-
 namespace interpreter
 {
   //*--------------
@@ -88,7 +87,7 @@ namespace interpreter
       for (auto *expr : arr_node->elements)
       {
         ast::ASTVariant variant = expr;
-        elements.push_back(interpret(&variant, env, is_returned));
+        elements.push_back(std::unique_ptr<runtime_value>(interpret(&variant, env, is_returned).release()));
       }
       return std::make_unique<array_value>(std::move(elements), is_returned);
     }
@@ -113,7 +112,7 @@ namespace interpreter
           key_str = "";
         }
         ast::ASTVariant variant = value;
-        properties.emplace(key_str, interpret(&variant, env, is_returned));
+        properties.emplace(key_str, std::unique_ptr<runtime_value>(interpret(&variant, env, is_returned).release()));
       }
       return std::make_unique<object_value>(std::move(properties), is_returned);
     }
@@ -178,7 +177,6 @@ namespace interpreter
       return interpret_member_expression(mem_node, env, is_returned);
     }
     default:
-      // [DEBUG**]std::cout << "[interpret] Unhandled statement kind: " << ast::statement_kind_to_string(node->kind) << "\n";
       return std::make_unique<null_value>(is_returned);
     }
     return std::make_unique<null_value>(is_returned);
@@ -433,6 +431,7 @@ namespace interpreter
             error_expression->columnend,
             "interpreter.cpp : Environment::delete_variable : if",
             error::ErrorImportance::MODERATE);
+        return std::make_unique<null_value>().get();
       }
       env->variables.erase(it);
       if (env->constants.find(name) != env->constants.end())
@@ -534,12 +533,20 @@ namespace interpreter
 
     auto out_fn = std::make_unique<native_function_value>(
         "out",
+        "nulltype",
         -1,
-        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
+        [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
           for (const auto &arg : args)
           {
-            std::string s = arg->to_string();
+            std::string s = std::visit([](auto const &v) -> std::string
+                                       {
+                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::unique_ptr<runtime_value>>)
+                    return v ? v->to_string() : "";
+                else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ast::ReferenceExpression>)
+                    return "";
+                else
+                    return ""; }, arg);
             for (size_t i = 0; i < s.size(); ++i)
             {
               if (s[i] == '\\' && i + 1 < s.size() && s[i + 1] == 'n')
@@ -556,15 +563,22 @@ namespace interpreter
           std::cout << std::flush;
           return std::make_unique<null_value>(false);
         });
-
     auto outln_fn = std::make_unique<native_function_value>(
         "outln",
+        "nulltype",
         -1,
-        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
+        [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
           for (const auto &arg : args)
           {
-            std::string s = arg->to_string();
+            std::string s = std::visit([](auto const &v) -> std::string
+                                       {
+                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::unique_ptr<runtime_value>>)
+                    return v ? v->to_string() : "";
+                else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ast::ReferenceExpression>)
+                    return "";
+                else
+                    return ""; }, arg);
             for (size_t i = 0; i < s.size(); ++i)
             {
               if (s[i] == '\\' && i + 1 < s.size() && s[i + 1] == 'n')
@@ -585,46 +599,241 @@ namespace interpreter
 
     auto in = std::make_unique<native_function_value>(
         "in",
+        "string",
         -1,
-        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
+        [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
           for (const auto &arg : args)
           {
-            std::cout << arg->to_string();
+            std::string s = std::visit([](auto &&v) -> std::string
+                                       {
+                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::unique_ptr<runtime_value>>)
+                    return v ? v->to_string() : "";
+                else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ast::ReferenceExpression>)
+                    return "";
+                else
+                    return ""; }, arg);
+            std::cout << s;
           }
           std::string input;
           std::getline(std::cin, input);
           return std::make_unique<string_value>(input, false);
         });
-
     auto alloc = std::make_unique<native_function_value>(
         "alloc",
+        "~[],string",
         2,
-        [](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
+        [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
-          auto value = args[0].get();
-          auto size = dynamic_cast<number_value *>(args[1].get());
-          if (!size)
+          runtime_value *value_rv = nullptr;
+          const ast::ReferenceExpression *value_ref = nullptr;
+          if (auto value_ptr_variant = std::get_if<std::unique_ptr<runtime_value>>(&args[0]))
           {
-            error::Error err(
-                error::ErrorCode::RUNTIME_ERROR,
-                "First argument to alloc must be a number.",
-                error_expression.linestart, error_expression.lineend, error_expression.columnstart, error_expression.columnend,
-                "interpreter.cpp : alloc",
-                error::ErrorImportance::CRITICAL);
+            value_rv = value_ptr_variant->get();
+          }
+          else if (auto ref_expr_variant = std::get_if<ast::ReferenceExpression>(&args[0]))
+          {
+            value_ref = ref_expr_variant;
+          }
+          else
+          {
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "Invalid first argument to alloc.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : alloc", error::ErrorImportance::CRITICAL);
+            error::display_all_errors(true);
             return std::make_unique<null_value>(false);
           }
-          std::vector<std::unique_ptr<runtime_value>> elements;
-          for (size_t i = 0; i < size->value; ++i)
+
+          auto size_ptr_variant = std::get_if<std::unique_ptr<runtime_value>>(&args[1]);
+          if (!size_ptr_variant)
           {
-            elements.push_back(value->clone());
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "Invalid second argument to alloc.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : alloc", error::ErrorImportance::CRITICAL);
+            error::display_all_errors(true);
+            return std::make_unique<null_value>(false);
           }
-          return std::make_unique<array_value>(std::move(elements), false);
+          auto size = dynamic_cast<number_value *>(size_ptr_variant->get());
+          if (!size)
+          {
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "Second argument to alloc must be a number.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : alloc", error::ErrorImportance::CRITICAL);
+            error::display_all_errors(true);
+            return std::make_unique<null_value>(false);
+          }
+          if (auto arr = dynamic_cast<array_value *>(value_rv))
+          {
+            std::vector<std::unique_ptr<runtime_value>> elems;
+            elems.reserve(static_cast<size_t>(size->value));
+            for (size_t i = 0; i < static_cast<size_t>(size->value); ++i)
+            {
+              if (i < arr->elements.size())
+              {
+                elems.push_back(arr->elements[i]->clone());
+              }
+            }
+            return std::make_unique<array_value>(std::move(elems), arr->type, arr->returned_value);
+          }
+          else if (auto str = dynamic_cast<string_value *>(value_rv))
+          {
+            std::string s = str->value;
+            s.resize(static_cast<size_t>(size->value));
+            return std::make_unique<string_value>(s, str->returned_value);
+          }
+          else if (auto ref = dynamic_cast<ast::ReferenceExpression *>(const_cast<ast::ReferenceExpression *>(value_ref)))
+          {
+            auto var = env->lookup_variable(ref->name, ref);
+            if (auto arr = dynamic_cast<array_value *>(var))
+            {
+              std::vector<std::unique_ptr<runtime_value>> elems;
+              elems.reserve(static_cast<size_t>(size->value));
+              for (size_t i = 0; i < static_cast<size_t>(size->value); ++i)
+              {
+                if (i < arr->elements.size())
+                {
+                  elems.push_back(arr->elements[i]->clone());
+                }
+              }
+              auto fv = std::make_unique<array_value>(std::move(elems), arr->type, arr->returned_value);
+              env->delete_variable(ref->name, ref);
+              env->declare_variable(ref->name, std::move(fv), new ast::Type(arr->type), ref, false, false);
+            }
+            else if (auto str = dynamic_cast<string_value *>(var))
+            {
+              std::string s = str->value;
+              s.resize(static_cast<size_t>(size->value));
+              auto fv = std::make_unique<string_value>(s, str->returned_value);
+              env->delete_variable(ref->name, ref);
+              env->declare_variable(ref->name, std::move(fv), new ast::Type("string"), ref, false, false);
+            }
+          }
+          else
+          {
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "First argument to alloc must be an array, string, or number.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : alloc", error::ErrorImportance::CRITICAL);
+            return std::make_unique<null_value>(false);
+          }
+          return std::make_unique<null_value>(false);
+        });
+    auto free = std::make_unique<native_function_value>(
+        "free",
+        "nulltype",
+        1,
+        [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
+           ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
+        {
+          auto args0 = &args[0];
+          const ast::ReferenceExpression *ref = std::get_if<ast::ReferenceExpression>(args0);
+          if (!ref)
+          {
+            // Errors are behaving weirdly by shifting to the right by 1, so we shift them back
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "Invalid argument to free. Must be a reference to a variable.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : free", error::ErrorImportance::CRITICAL);
+            error::display_all_errors(true);
+            return std::make_unique<null_value>(false);
+          }
+          error_expression.columnstart--;
+          error_expression.columnend--;
+          env->delete_variable(ref->name, &error_expression);
+          error::display_all_errors(true);
+          return std::make_unique<null_value>(false);
+        });
+    auto append = std::make_unique<native_function_value>(
+        "append",
+        "~[],any",
+        2,
+        [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
+           ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
+        {
+          runtime_value *value_rv = nullptr;
+          const ast::ReferenceExpression *value_ref = nullptr;
+          if (auto value_ptr_variant = std::get_if<std::unique_ptr<runtime_value>>(&args[0]))
+          {
+            value_rv = value_ptr_variant->get();
+          }
+          else if (auto ref_expr_variant = std::get_if<ast::ReferenceExpression>(&args[0]))
+          {
+            value_ref = ref_expr_variant;
+          }
+          else
+          {
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "Invalid first argument to append.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : append", error::ErrorImportance::CRITICAL);
+            error::display_all_errors(true);
+            return std::make_unique<null_value>(false);
+          }
+
+          auto elem_ptr_variant = std::get_if<std::unique_ptr<runtime_value>>(&args[1]);
+          if (!elem_ptr_variant)
+          {
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "Invalid second argument to append.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : append", error::ErrorImportance::CRITICAL);
+            error::display_all_errors(true);
+            return std::make_unique<null_value>(false);
+          }
+          auto elem = dynamic_cast<number_value *>(elem_ptr_variant->get());
+          if (!elem)
+          {
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "Second argument to append must be a number.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : append", error::ErrorImportance::CRITICAL);
+            error::display_all_errors(true);
+            return std::make_unique<null_value>(false);
+          }
+          if (auto arr = dynamic_cast<array_value *>(value_rv))
+          {
+            arr->elements.push_back(elem->clone());
+            return arr->clone();
+          }
+          else if (auto ref = dynamic_cast<ast::ReferenceExpression *>(const_cast<ast::ReferenceExpression *>(value_ref)))
+          {
+            auto var = env->lookup_variable(ref->name, ref);
+            if (auto arr = dynamic_cast<array_value *>(var))
+            {
+              arr->elements.push_back(elem->clone());
+              // Explicitly update the variable in the environment so it holds the new array
+              auto updated = env->assign_variable(ref->name, std::make_unique<array_value>(*arr), ref);
+              return updated->clone();
+            }
+          }
+          else
+          {
+            error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                             "First argument to append must be an array.",
+                             error_expression.linestart, error_expression.lineend,
+                             error_expression.columnstart, error_expression.columnend,
+                             "interpreter.cpp : append", error::ErrorImportance::CRITICAL);
+            return std::make_unique<null_value>(false);
+          }
+          return std::make_unique<null_value>(false);
         });
     global_env->declare_variable("out", std::move(out_fn), new ast::Type("native_function"), nullptr, true, false);
     global_env->declare_variable("outln", std::move(outln_fn), new ast::Type("native_function"), nullptr, true, false);
     global_env->declare_variable("in", std::move(in), new ast::Type("native_function"), nullptr, true, false);
     global_env->declare_variable("alloc", std::move(alloc), new ast::Type("native_function"), nullptr, true, false);
+    global_env->declare_variable("free", std::move(free), new ast::Type("native_function"), nullptr, true, false);
+    global_env->declare_variable("append", std::move(append), new ast::Type("native_function"), nullptr, true, false);
     return global_env;
   }
 
@@ -826,32 +1035,46 @@ namespace interpreter
     }
     else
     {
-      // [DEBUG**]std::cout << "[interpret_for_loop_statement] Found for loop with array of\n";
+      // [Modified] Handle both VariableDeclarationExpression and SymbolExpression for the loop variable.
+      std::string var_name;
+      if (auto var_decl_expr = dynamic_cast<ast::VariableDeclarationExpression *>(for_loop->initializer))
+      {
+        var_name = var_decl_expr->name;
+      }
+      else if (auto sym_expr = dynamic_cast<ast::SymbolExpression *>(for_loop->initializer))
+      {
+        var_name = sym_expr->value;
+      }
+      else
+      {
+        error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                         "Invalid loop variable in for-of loop.",
+                         for_loop->linestart, for_loop->lineend,
+                         for_loop->columnstart, for_loop->columnend,
+                         "interpreter.cpp : interpret_for_loop_statement : for-of", error::ErrorImportance::CRITICAL);
+        return std::make_unique<null_value>(false);
+      }
+
       if (auto array_sym = dynamic_cast<ast::SymbolExpression *>(for_loop->array_of))
       {
         runtime_value *arr_var = env->lookup_variable(array_sym->value, for_loop->array_of);
         if (auto arr = dynamic_cast<array_value *>(arr_var))
         {
-          auto var_decl_expr = dynamic_cast<ast::VariableDeclarationExpression *>(for_loop->initializer);
-          if (var_decl_expr)
+          for (size_t i = 0; i < arr->elements.size(); i++)
           {
-            std::string var_name = var_decl_expr->name;
-            for (size_t i = 0; i < arr->elements.size(); i++)
+            env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
+            if (for_loop->body)
             {
-              env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
-              if (for_loop->body)
+              ast::ASTVariant body_variant = for_loop->body;
+              auto result = interpret(&body_variant, env, false);
+              if (result->returned_value)
               {
-                ast::ASTVariant body_variant = for_loop->body;
-                auto result = interpret(&body_variant, env, false);
-                if (result->returned_value)
-                {
-                  return result;
-                }
+                return result;
               }
-              runtime_value *updated = env->lookup_variable(var_name, for_loop->initializer);
-              arr->elements[i] = updated->clone();
-              env->delete_variable(var_name, for_loop->initializer);
             }
+            runtime_value *updated = env->lookup_variable(var_name, for_loop->initializer);
+            arr->elements[i] = std::unique_ptr<runtime_value>(updated->clone().release());
+            env->delete_variable(var_name, for_loop->initializer);
           }
         }
       }
@@ -861,31 +1084,27 @@ namespace interpreter
         auto arr_val = interpret(&arr_variant, env, false);
         if (auto arr = dynamic_cast<array_value *>(arr_val.get()))
         {
-          auto var_decl_expr = dynamic_cast<ast::VariableDeclarationExpression *>(for_loop->initializer);
-          if (var_decl_expr)
+          for (size_t i = 0; i < arr->elements.size(); i++)
           {
-            std::string var_name = var_decl_expr->name;
-            for (size_t i = 0; i < arr->elements.size(); i++)
+            env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
+            if (for_loop->body)
             {
-              env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
-              if (for_loop->body)
+              ast::ASTVariant body_variant = for_loop->body;
+              auto result = interpret(&body_variant, env, false);
+              if (result->returned_value)
               {
-                ast::ASTVariant body_variant = for_loop->body;
-                auto result = interpret(&body_variant, env, false);
-                if (result->returned_value)
-                {
-                  return result;
-                }
+                return result;
               }
-              runtime_value *updated = env->lookup_variable(var_name, for_loop->initializer);
-              arr->elements[i] = updated->clone();
-              env->delete_variable(var_name, for_loop->initializer);
             }
+            runtime_value *updated = env->lookup_variable(var_name, for_loop->initializer);
+            arr->elements[i] = std::unique_ptr<runtime_value>(updated->clone().release());
+            env->delete_variable(var_name, for_loop->initializer);
           }
         }
       }
     }
-    return std::make_unique<null_value>(false);
+    std::unique_ptr<runtime_value> result = std::make_unique<null_value>(false);
+    return result;
   };
 
   //*-------------------
@@ -1063,9 +1282,40 @@ namespace interpreter
     {
       // [DEBUG**]std::cout << "Calling native function: " << native_fn_val->name << "\n";
       // [DEBUG**]std::cout << "[interpret_call_expression] Calling native function: " << native_fn_val->name << "\n";
-      std::vector<std::unique_ptr<runtime_value>> args;
+      std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> args;
       for (const auto &arg : call->args)
       {
+        if (native_fn_val->name == "alloc" && args.size() == 0)
+        {
+          if (auto ref_expr = dynamic_cast<ast::ReferenceExpression *>(arg))
+          {
+            args.push_back(*ref_expr);
+            continue;
+          }
+        }
+        if (native_fn_val->name == "alloc" && args.size() == 1)
+        {
+          if (auto ptr = std::get_if<std::unique_ptr<runtime_value>>(&args[0]))
+          {
+            if (auto arr = dynamic_cast<array_value *>((*ptr).get()))
+            {
+              if (arr->elements.empty())
+              {
+                arr->type = "[]" + native_fn_val->return_type;
+              }
+              args.push_back(std::move(*ptr));
+              continue;
+            }
+          }
+        }
+        if (native_fn_val->name == "free")
+        {
+          if (auto ref_expr = dynamic_cast<ast::ReferenceExpression *>(arg))
+          {
+            args.push_back(*ref_expr);
+            continue;
+          }
+        }
         ast::ASTVariant arg_variant = arg;
         args.push_back(interpret(&arg_variant, env, false));
       }
@@ -1079,12 +1329,43 @@ namespace interpreter
       }
       else if (native_fn_val->arity == -1 || args.size() == native_fn_val->arity)
       {
-        auto finalval = native_fn_val->body(args, *call);
+        auto finalval = native_fn_val->body(args, *call, env);
+        if (type_checker::is_matching_type(ast::Type(native_fn_val->return_type), *finalval) && native_fn_val->return_type.rfind("~", 0) != 0)
+        {
+          return finalval;
+        }
+        else if (native_fn_val->return_type.rfind("~", 0) == 0)
+        {
+          std::vector<std::string> types = type_checker::split_type(native_fn_val->return_type);
+          for (const auto &type : types)
+          {
+            if (type_checker::is_matching_type(ast::Type(type), *finalval))
+            {
+              return finalval;
+            }
+          }
+          error::Error err(
+              error::ErrorCode::RUNTIME_ERROR,
+              "Native function '" + native_fn_val->name + "' returned value type mismatch. Expected '" + native_fn_val->return_type.substr(1) + "', got '" + finalval->type + "'.",
+              call->linestart, call->lineend, call->columnstart, call->columnend,
+              "interpreter.cpp : interpret_call_expression : else",
+              error::ErrorImportance::MODERATE);
+          return finalval;
+        }
+        else
+        {
+          error::Error err(
+              error::ErrorCode::RUNTIME_ERROR,
+              "Native function '" + native_fn_val->name + "' returned value type mismatch. Expected '" + native_fn_val->return_type + "', got '" + finalval->type + "'.",
+              call->linestart, call->lineend, call->columnstart, call->columnend,
+              "interpreter.cpp : interpret_call_expression : else",
+              error::ErrorImportance::MODERATE);
+          return finalval;
+        }
         return finalval;
       }
       return std::make_unique<null_value>(is_returned);
     }
-
     return std::make_unique<null_value>(is_returned);
   }
 
@@ -1187,40 +1468,75 @@ namespace interpreter
             assign->linestart, assign->lineend, assign->columnstart, assign->columnend,
             "interpreter.cpp : interpret_assignment_expression",
             error::ErrorImportance::MODERATE);
+        if (auto symExpr = dynamic_cast<ast::SymbolExpression *>(assign->left))
+        {
+          return env->assign_variable(symExpr->value, rhs->clone(), assign);
+        }
+        else if (auto mem_expr = dynamic_cast<ast::MemberExpression *>(assign->left))
+        {
+          std::string objectName;
+          if (auto symObj = dynamic_cast<ast::SymbolExpression *>(mem_expr->object))
+          {
+            objectName = symObj->value;
+          }
+          std::string propertyName;
+          if (auto symProp = dynamic_cast<ast::SymbolExpression *>(mem_expr->property))
+          {
+            propertyName = symProp->value;
+          }
+          else if (auto strProp = dynamic_cast<ast::StringExpression *>(mem_expr->property))
+          {
+            propertyName = strProp->value;
+          }
+          return env->assign_variable(objectName + "." + propertyName, rhs->clone(), assign);
+        }
         return std::make_unique<null_value>(is_returned);
+
+        // Handle MemberExpression for assignment
+        if (auto mem_expr = dynamic_cast<ast::MemberExpression *>(assign->left))
+        {
+          std::string objectName;
+          if (auto symObj = dynamic_cast<ast::SymbolExpression *>(mem_expr->object))
+          {
+            objectName = symObj->value;
+          }
+          std::string propertyName;
+          if (auto symProp = dynamic_cast<ast::SymbolExpression *>(mem_expr->property))
+          {
+            propertyName = symProp->value;
+          }
+          else if (auto strProp = dynamic_cast<ast::StringExpression *>(mem_expr->property))
+          {
+            propertyName = strProp->value;
+          }
+          return env->assign_variable(objectName + "." + propertyName, rhs->clone(), assign);
+        }
       }
     }
 
-    if (auto lnum = dynamic_cast<number_value *>(lhs.get()))
+    // New: always update the variable and return the new value
+    if (auto symExpr = dynamic_cast<ast::SymbolExpression *>(assign->left))
     {
-      if (auto rnum = dynamic_cast<number_value *>(rhs.get()))
-      {
-        // [DEBUG**]std::cout << "[interpet_assignment_expression] Assigning number: " << lnum->value << " to " << rnum->value << "\n";
-        return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(assign->left)->value, std::make_unique<number_value>(rnum->value, is_returned), assign);
-      }
+      auto updated = env->assign_variable(symExpr->value, rhs->clone(), assign);
+      return updated->clone();
     }
-
-    // Handle MemberExpression for assignment
-    if (auto mem_expr = dynamic_cast<ast::MemberExpression *>(assign->left))
+    else if (auto mem_expr = dynamic_cast<ast::MemberExpression *>(assign->left))
     {
       std::string objectName;
       if (auto symObj = dynamic_cast<ast::SymbolExpression *>(mem_expr->object))
-      {
         objectName = symObj->value;
-      }
       std::string propertyName;
       if (auto symProp = dynamic_cast<ast::SymbolExpression *>(mem_expr->property))
-      {
         propertyName = symProp->value;
-      }
       else if (auto strProp = dynamic_cast<ast::StringExpression *>(mem_expr->property))
-      {
         propertyName = strProp->value;
-      }
-      return env->assign_variable(objectName + "." + propertyName, rhs->clone(), assign);
+      auto updated = env->assign_variable(objectName + "." + propertyName, rhs->clone(), assign);
+      return updated->clone();
     }
-
-    return std::make_unique<null_value>(is_returned);
+    else
+    {
+      return std::make_unique<null_value>(is_returned);
+    }
   }
 
   std::unique_ptr<runtime_value> interpret_member_expression(ast::MemberExpression *expression, interpreter::Environment *env, bool is_returned)
@@ -1296,51 +1612,6 @@ namespace interpreter
         return std::make_unique<string_value>(obj_val->to_string(), is_returned);
       }
     }
-    else if (property == "append")
-    {
-      if (auto arr_val = dynamic_cast<array_value *>(obj.get()))
-      {
-        return std::make_unique<native_function_value>(
-            "append",
-            1,
-            [arr_val, env, mem, is_returned](const std::vector<std::unique_ptr<runtime_value>> &args, ast::Expression &error_expression) -> std::unique_ptr<runtime_value>
-            {
-              /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: before appending, array type: " << arr_val->type << "\n";
-              for (const auto &arg : args)
-              {
-                arr_val->elements.push_back(arg->clone());
-              }
-              /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: after appending, about to clone array\n";
-              if (auto refExpr = dynamic_cast<ast::ReferenceExpression *>(mem->object))
-              {
-                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: reference expression found\n";
-                std::string varName = refExpr->name;
-                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: variable name: " << varName << "\n";
-                std::unique_ptr<runtime_value> clonedArray;
-                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: about to clone array\n";
-                try
-                {
-                  /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: cloning array\n";
-                  clonedArray = arr_val->clone();
-                  /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: cloned array successfully\n";
-                }
-                catch (const std::exception &e)
-                {
-                  std::cout << "[DEBUG**] Exception during clone(): " << e.what() << "\n";
-                  return std::make_unique<null_value>(false);
-                }
-                // Delete the existing variable.
-                env->delete_variable(varName, mem);
-                // Redeclare the variable with the cloned modified array.
-                bool is_const = env->is_variable_constant(varName);
-                bool is_public = env->is_variable_public(varName);
-                env->declare_variable(varName, std::move(clonedArray), nullptr, mem, is_const, is_public);
-                /* [DEBUG**] */ std::cout << "[DEBUG**] In append lambda: variable redeclared successfully\n";
-              }
-              return std::make_unique<null_value>(false);
-            });
-      }
-    }
     else if (property == "num")
     {
       if (auto str_val = dynamic_cast<string_value *>(obj.get()))
@@ -1354,6 +1625,21 @@ namespace interpreter
           error::Error err(error::ErrorCode::RUNTIME_ERROR, "Cannot convert string of invalid number to number. Invalid number format.", mem->linestart, mem->lineend, mem->columnstart, mem->columnend, "interpreter.cpp : interpret_member_expression : if", error::ErrorImportance::MODERATE);
           return str_val->clone();
         }
+      }
+    }
+    else if (property == "append")
+    {
+      if (auto arr_val = dynamic_cast<array_value *>(obj.get()))
+      {
+        return std::make_unique<native_function_value>(
+            "append",
+            "~[],any",
+            1,
+            [mem](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
+                  ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
+            {
+
+            });
       }
     }
     if (auto obj_val = dynamic_cast<object_value *>(obj.get()))
@@ -1432,6 +1718,9 @@ namespace interpreter
       return "null";
     }
     // Add more types as needed
-    return "Unknown";
+    else
+    {
+      return "<unknown>";
+    }
   }
 }
