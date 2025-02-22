@@ -3,11 +3,11 @@ Program {
   body: [
     VariableDeclarationStatement {
       kind: 4,
-      linestart: 1,
-      lineend: 1,
-      columnstart: 1,
-      columnend: 18,
-      name: "numbers",
+      linestart: 2,
+      lineend: 2,
+      columnstart: 0,
+      columnend: 16,
+      name: "nums",
       type: 
         Type {
           name: "",
@@ -17,28 +17,70 @@ Program {
       value: 
         ArrayExpression {
           kind: 13,
-          linestart: 1,
-          lineend: 1,
-          columnstart: 15,
-          columnend: 16,
+          linestart: 2,
+          lineend: 2,
+          columnstart: 13,
+          columnend: 14,
           elements: [
 
           ]
         },
-      is_const: false,
+      is_const: true,
       is_public: false
+    },
+    ExpressionStatement {
+      kind: 2,
+      linestart: 3,
+      lineend: 3,
+      columnstart: 0,
+      columnend: 28,
+      expression:
+        CallExpression {
+          kind: 16,
+          linestart: 3,
+          lineend: 3,
+          columnstart: 0,
+          columnend: 28,
+          function:
+            SymbolExpression {
+              kind: 11,
+              linestart: 3,
+              lineend: 3,
+              columnstart: 0,
+              columnend: 5,
+              value: "outln"
+            },
+          args: [
+            StringExpression {
+              kind: 12,
+              linestart: 3,
+              lineend: 3,
+              columnstart: 6,
+              columnend: 21,
+              value: "nums before: "
+            },
+            SymbolExpression {
+              kind: 11,
+              linestart: 3,
+              lineend: 3,
+              columnstart: 23,
+              columnend: 27,
+              value: "nums"
+            }
+          ]
+        }
     },
     ForLoopStatement {
       kind: 8,
-      linestart: 3,
-      lineend: 5,
+      linestart: 4,
+      lineend: 6,
       columnstart: 0,
       columnend: 1,
       initializer:
         VariableDeclarationExpression {
           kind: 18,
-          linestart: 3,
-          lineend: 3,
+          linestart: 4,
+          lineend: 4,
           columnstart: 5,
           columnend: 14,,
           name: "i",
@@ -51,8 +93,8 @@ Program {
           value: 
             NumberExpression {
               kind: 9,
-              linestart: 3,
-              lineend: 3,
+              linestart: 4,
+              lineend: 4,
               columnstart: 13,
               columnend: 14,
               value: 0.000000
@@ -63,15 +105,15 @@ Program {
       condition:
         BinaryExpression {
           kind: 15,
-          linestart: 3,
-          lineend: 3,
+          linestart: 4,
+          lineend: 4,
           columnstart: 16,
-          columnend: 24,
+          columnend: 22,
           left:
             SymbolExpression {
               kind: 11,
-              linestart: 3,
-              lineend: 3,
+              linestart: 4,
+              lineend: 4,
               columnstart: 16,
               columnend: 17,
               value: "i"
@@ -79,44 +121,44 @@ Program {
           op: {
             kind: "LESS",
             value: "<",
-            linestart: 3,
-            lineend: 3,
+            linestart: 4,
+            lineend: 4,
             columnstart: 18,
             columnend: 19
           },
           right:
             NumberExpression {
               kind: 9,
-              linestart: 3,
-              lineend: 3,
+              linestart: 4,
+              lineend: 4,
               columnstart: 20,
-              columnend: 24,
-              value: 1000.000000
+              columnend: 22,
+              value: 10.000000
             }
         },
       post:
         AssignmentExpression {
           kind: 17,
-          linestart: 3,
-          lineend: 3,
-          columnstart: 26,
-          columnend: 29,,
+          linestart: 4,
+          lineend: 4,
+          columnstart: 24,
+          columnend: 27,,
           left:
             SymbolExpression {
               kind: 11,
-              linestart: 3,
-              lineend: 3,
-              columnstart: 26,
-              columnend: 27,
+              linestart: 4,
+              lineend: 4,
+              columnstart: 24,
+              columnend: 25,
               value: "i"
             },
           op: {
             kind: "PLUS_PLUS",
             value: "++",
-            linestart: 3,
-            lineend: 3,
-            columnstart: 27,
-            columnend: 29
+            linestart: 4,
+            lineend: 4,
+            columnstart: 25,
+            columnend: 27
           },
           right:
 ,
@@ -125,111 +167,102 @@ Program {
       body:
         BlockStatement {
           kind: 3,
-          linestart: 3,
-          lineend: 5,
-          columnstart: 31,
+          linestart: 4,
+          lineend: 6,
+          columnstart: 29,
           columnend: 1,
           body: [
             ExpressionStatement {
               kind: 2,
-              linestart: 4,
-              lineend: 4,
+              linestart: 5,
+              lineend: 5,
               columnstart: 2,
-              columnend: 30,
+              columnend: 16,
               expression:
-                AssignmentExpression {
-                  kind: 17,
-                  linestart: 4,
-                  lineend: 4,
+                CallExpression {
+                  kind: 16,
+                  linestart: 5,
+                  lineend: 5,
                   columnstart: 2,
-                  columnend: 30,,
-                  left:
+                  columnend: 16,
+                  function:
+                    MemberExpression {
+                      kind: 19,
+                      linestart: 5,
+                      lineend: 5,
+                      columnstart: 2,
+                      columnend: 13,,
+                      object:
+                        SymbolExpression {
+                          kind: 11,
+                          linestart: 5,
+                          lineend: 5,
+                          columnstart: 2,
+                          columnend: 6,
+                          value: "nums"
+                        },
+                      property:
+                        SymbolExpression {
+                          kind: 11,
+                          linestart: 5,
+                          lineend: 5,
+                          columnstart: 7,
+                          columnend: 13,
+                          value: "append"
+                        }
+                    },
+                  args: [
                     SymbolExpression {
                       kind: 11,
-                      linestart: 4,
-                      lineend: 4,
-                      columnstart: 2,
-                      columnend: 9,
-                      value: "numbers"
-                    },
-                  op: {
-                    kind: "ASSIGNMENT",
-                    value: "=",
-                    linestart: 4,
-                    lineend: 4,
-                    columnstart: 10,
-                    columnend: 11
-                  },
-                  right:
-                    CallExpression {
-                      kind: 16,
-                      linestart: 4,
-                      lineend: 4,
-                      columnstart: 12,
-                      columnend: 30,
-                      function:
-                        SymbolExpression {
-                          kind: 11,
-                          linestart: 4,
-                          lineend: 4,
-                          columnstart: 12,
-                          columnend: 18,
-                          value: "append"
-                        },
-                      args: [
-                        SymbolExpression {
-                          kind: 11,
-                          linestart: 4,
-                          lineend: 4,
-                          columnstart: 19,
-                          columnend: 26,
-                          value: "numbers"
-                        },
-                        SymbolExpression {
-                          kind: 11,
-                          linestart: 4,
-                          lineend: 4,
-                          columnstart: 28,
-                          columnend: 29,
-                          value: "i"
-                        }
-                      ]
-                    },
-                  increment_decrement: false
+                      linestart: 5,
+                      lineend: 5,
+                      columnstart: 14,
+                      columnend: 15,
+                      value: "i"
+                    }
+                  ]
                 }
             }
           ]
         },
     ExpressionStatement {
       kind: 2,
-      linestart: 6,
-      lineend: 6,
+      linestart: 7,
+      lineend: 7,
       columnstart: 0,
-      columnend: 14,
+      columnend: 27,
       expression:
         CallExpression {
           kind: 16,
-          linestart: 6,
-          lineend: 6,
+          linestart: 7,
+          lineend: 7,
           columnstart: 0,
-          columnend: 14,
+          columnend: 27,
           function:
             SymbolExpression {
               kind: 11,
-              linestart: 6,
-              lineend: 6,
+              linestart: 7,
+              lineend: 7,
               columnstart: 0,
               columnend: 5,
               value: "outln"
             },
           args: [
+            StringExpression {
+              kind: 12,
+              linestart: 7,
+              lineend: 7,
+              columnstart: 6,
+              columnend: 20,
+              value: "nums after: "
+            },
             SymbolExpression {
               kind: 11,
-              linestart: 6,
-              lineend: 6,
-              columnstart: 6,
-              columnend: 13,
-              value: "numbers"
+              linestart: 7,
+              lineend: 7,
+              columnstart: 22,
+              columnend: 26,
+              value: "nums"
             }
           ]
         }

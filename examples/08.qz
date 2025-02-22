@@ -1,0 +1,7 @@
+-* append property test *-
+const nums = [];
+outln("nums before: ", nums);
+for (let i = 0; i < 10; i++) {
+  nums.append(i);
+}
+outln("nums after: ", nums);

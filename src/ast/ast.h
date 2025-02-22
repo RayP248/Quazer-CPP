@@ -141,6 +141,10 @@ namespace ast
     {
       kind = StatementKind::ARRAY_EXPRESSION;
     }
+    ArrayExpression(const std::vector<Expression *> &elems) : elements(elems)
+    {
+      kind = StatementKind::ARRAY_EXPRESSION;
+    }
     ~ArrayExpression() override
     {
       for (auto &element : elements)

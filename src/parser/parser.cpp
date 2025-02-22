@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "../error/error.h"
+#include "../interpreter/interpreter.h"
 #include <memory>
 namespace parser
 {
@@ -1112,5 +1113,48 @@ namespace parser
       properties.push_back(std::make_pair(key, value));
     }
     return properties;
+  }
+  ast::Expression *runtime_to_ast(interpreter::runtime_value *value)
+  {
+    if (auto number_value = dynamic_cast<interpreter::number_value *>(value))
+    {
+      return new ast::NumberExpression(number_value->value);
+    }
+    else if (auto string_value = dynamic_cast<interpreter::string_value *>(value))
+    {
+      ast::StringExpression *expr = new ast::StringExpression();
+      expr->value = string_value->value;
+      return expr;
+    }
+    else if (auto array_value = dynamic_cast<interpreter::array_value *>(value))
+    {
+      ast::ArrayExpression *array = new ast::ArrayExpression();
+      for (auto &element : array_value->elements)
+      {
+        array->elements.push_back(runtime_to_ast(element.get()));
+      }
+      return array;
+    }
+    else if (auto object_value = dynamic_cast<interpreter::object_value *>(value))
+    {
+      ast::ObjectExpression *object = new ast::ObjectExpression();
+      for (auto &property : object_value->properties)
+      {
+        object->properties.push_back(std::make_pair(runtime_to_ast(new interpreter::string_value(property.first, property.second->returned_value)), runtime_to_ast(property.second.get())));
+      }
+      return object;
+    }
+    else if (auto boolean_value = dynamic_cast<interpreter::boolean_value *>(value))
+    {
+      return new ast::SymbolExpression(boolean_value->value ? "true" : "false");
+    }
+    else if (auto null_value = dynamic_cast<interpreter::null_value *>(value))
+    {
+      return new ast::SymbolExpression("null");
+    }
+    else
+    {
+      return new ast::DummyExpression();
+    }
   }
 }

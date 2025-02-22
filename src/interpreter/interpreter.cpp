@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "../error/error.h"
+#include "../parser/parser.h"
 #include <variant>
 #include <memory>
 #include <cmath>
@@ -20,11 +21,11 @@ namespace interpreter
   //*-------------------
   std::unique_ptr<runtime_value> interpret(ast::ASTVariant *statement, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret] Starting interpretation\n";
+    /* [DEBUG**] */ std::cout << "[interpret] Starting interpretation\n";
 
     if (!statement)
     {
-      // [DEBUG**]std::cout << "[interpret] Null statement received\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Null statement received\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
     // Convert all AST nodes to Statement*:
@@ -33,11 +34,11 @@ namespace interpreter
 
     if (!node)
     {
-      // [DEBUG**]std::cout << "[interpret] Null statement received\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Null statement received\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
 
-    // [DEBUG**]std::cout << "[interpret] Statement kind: " << ast::statement_kind_to_string(node->kind) << "\n";
+    /* [DEBUG**] */ std::cout << "[interpret] Statement kind: " << ast::statement_kind_to_string(node->kind) << "\n";
 
     switch (node->kind)
     {
@@ -56,16 +57,27 @@ namespace interpreter
       auto expr_node = dynamic_cast<ast::ExpressionStatement *>(node);
       return interpret_expression_statement(expr_node, env, is_returned);
     }
+    case ast::StatementKind::REFERENCE_EXPRESSION:
+    {
+      auto ref_node = dynamic_cast<ast::ReferenceExpression *>(node);
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting symbol: " << ref_node->name << "\n";
+      if (ref_node)
+      {
+        auto val = env->lookup_variable(ref_node->name, ref_node);
+        return val->clone();
+      }
+      return std::make_unique<null_value>();
+    }
     case ast::StatementKind::NUMBER_EXPRESSION:
     {
       auto num_node = dynamic_cast<ast::NumberExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting number: " << num_node->value << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting number: " << num_node->value << "\n";
       return std::make_unique<number_value>(num_node->value, is_returned);
     }
     case ast::StatementKind::SYMBOL_EXPRESSION:
     {
       auto sym_node = dynamic_cast<ast::SymbolExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting symbol: " << sym_node->value << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting symbol: " << sym_node->value << "\n";
       if (sym_node)
       {
         auto val = env->lookup_variable(sym_node->value, sym_node);
@@ -76,13 +88,13 @@ namespace interpreter
     case ast::StatementKind::STRING_EXPRESSION:
     {
       auto str_node = dynamic_cast<ast::StringExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting string: " << str_node->value << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting string: " << str_node->value << "\n";
       return std::make_unique<string_value>(str_node->value, is_returned);
     }
     case ast::StatementKind::ARRAY_EXPRESSION:
     {
       auto arr_node = dynamic_cast<ast::ArrayExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting array expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting array expression\n";
       std::vector<std::unique_ptr<runtime_value>> elements;
       for (auto *expr : arr_node->elements)
       {
@@ -94,7 +106,7 @@ namespace interpreter
     case ast::StatementKind::OBJECT_EXPRESSION:
     {
       auto obj_node = dynamic_cast<ast::ObjectExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting object expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting object expression\n";
       std::map<std::string, std::unique_ptr<runtime_value>> properties;
       for (auto &[key, value] : obj_node->properties)
       {
@@ -119,9 +131,9 @@ namespace interpreter
     case ast::StatementKind::BINARY_EXPRESSION:
     {
       auto bin_node = dynamic_cast<ast::BinaryExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting binary expression with operator: " << bin_node->op.value << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting binary expression with operator: " << bin_node->op.value << "\n";
       auto result = interpret_binary_expression(bin_node, env, is_returned);
-      // [DEBUG**]std::cout << "[interpret] Result of bin expr: " << result->to_string() << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Result of bin expr: " << result->to_string() << "\n";
       return result;
     }
     case ast::StatementKind::VARIABLE_DECLARATION_STATEMENT:
@@ -132,7 +144,7 @@ namespace interpreter
     case ast::StatementKind::RETURN_STATEMENT:
     {
       auto return_node = dynamic_cast<ast::ReturnStatement *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting return statement\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting return statement\n";
       return interpret_return_statement(return_node, env);
     }
     case ast::StatementKind::FUNCTION_DECLARATION_STATEMENT:
@@ -143,37 +155,37 @@ namespace interpreter
     case ast::StatementKind::CALL_EXPRESSION:
     {
       auto call_node = dynamic_cast<ast::CallExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting call expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting call expression\n";
       return interpret_call_expression(call_node, env, is_returned);
     }
     case ast::StatementKind::IF_STATEMENT:
     {
       auto if_node = dynamic_cast<ast::IfStatement *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting if statement\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting if statement\n";
       return interpret_if_statement(if_node, env, is_returned);
     }
     case ast::StatementKind::FOR_LOOP_STATEMENT:
     {
       auto for_node = dynamic_cast<ast::ForLoopStatement *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting for loop statement\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting for loop statement\n";
       return interpret_for_loop_statement(for_node, env, is_returned);
     }
     case ast::StatementKind::VARIABLE_DECLARATION_EXPRESSION:
     {
       auto var_decl_node = dynamic_cast<ast::VariableDeclarationExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting variable declaration expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting variable declaration expression\n";
       return interpret_variable_declaration_expression(var_decl_node, env, is_returned);
     }
     case ast::StatementKind::ASSIGNMENT_EXPRESSION:
     {
       auto assign_node = dynamic_cast<ast::AssignmentExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting assignment expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting assignment expression\n";
       return interpret_assignment_expression(assign_node, env, is_returned);
     }
     case ast::StatementKind::MEMBER_EXPRESSION:
     {
       auto mem_node = dynamic_cast<ast::MemberExpression *>(node);
-      // [DEBUG**]std::cout << "[interpret] Interpreting member expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret] Interpreting member expression\n";
       return interpret_member_expression(mem_node, env, is_returned);
     }
     default:
@@ -189,12 +201,12 @@ namespace interpreter
   {
     this->package_name = std::move(package_name);
     this->parent = parent;
-    // [DEBUG**]std::cout << "[Environment] Created environment with package name: " << this->package_name << "\n";
+    /* [DEBUG**] */ std::cout << "[Environment] Created environment with package name: " << this->package_name << "\n";
   }
 
   std::unique_ptr<runtime_value> Environment::declare_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Type *explicit_type, ast::Statement *error_expression, bool is_constant, bool is_public)
   {
-    // [DEBUG**]std::cout << "[declare_variable] Declaring variable: " << name << "\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Declaring variable: " << name << "\n";
     if (variables.find(name) != variables.end())
     {
       error::Error err(error::ErrorCode::RUNTIME_ERROR, "Variable '" + name + "' already declared in this scope.", error_expression->linestart, error_expression->lineend, error_expression->columnstart, error_expression->columnend, "interpreter.cpp : Environment::declare_variable : if", error::ErrorImportance::MODERATE);
@@ -219,34 +231,34 @@ namespace interpreter
         return std::make_unique<null_value>();
       }
     }
-    // [DEBUG**]std::cout << "[declare_variable] Variable not found in current scope\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Variable not found in current scope\n";
     variables.emplace(name, std::move(value));
-    // [DEBUG**]std::cout << "[declare_variable] Variable inserted into map\n";
-    // [DEBUG**]std::cout << "[declare_variable] Variable is " << (is_constant ? "constant" : "not constant") << "\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Variable inserted into map\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Variable is " << (is_constant ? "constant" : "not constant") << "\n";
     if (is_constant)
     {
-      // [DEBUG**]std::cout << "[declare_variable] Variable is constant\n";
+      /* [DEBUG**] */ std::cout << "[declare_variable] Variable is constant\n";
       constants.insert(name);
     }
-    // [DEBUG**]std::cout << "[declare_variable] Variable is " << (is_public ? "public" : "not public") << "\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Variable is " << (is_public ? "public" : "not public") << "\n";
     if (is_public)
     {
-      // [DEBUG**]std::cout << "[declare_variable] Variable is public\n";
+      /* [DEBUG**] */ std::cout << "[declare_variable] Variable is public\n";
       public_variables.insert(name);
     }
-    // [DEBUG**]std::cout << "[declare_variable] Variable type is " << (explicit_type ? explicit_type->raw_name : "null") << "\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Variable type is " << (explicit_type ? explicit_type->raw_name : "null") << "\n";
     if (explicit_type == nullptr || explicit_type->raw_name == "nulltype")
     {
-      // [DEBUG**]std::cout << "[declare_variable] Variable type is nulltype\n";
+      /* [DEBUG**] */ std::cout << "[declare_variable] Variable type is nulltype\n";
       variable_types.emplace(name, "nulltype");
     }
     else
     {
-      // [DEBUG**]std::cout << "[declare_variable] Variable type is not nulltype\n";
+      /* [DEBUG**] */ std::cout << "[declare_variable] Variable type is not nulltype\n";
       variable_types.emplace(name, explicit_type->raw_name);
     }
-    // [DEBUG**]std::cout << "[declare_variable] Returning variable: " << name << "\n";
-    // [DEBUG**]std::cout << "[declare_variable] Variable is: " << variables[name]->clone()->to_string() << "\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Returning variable: " << name << "\n";
+    /* [DEBUG**] */ std::cout << "[declare_variable] Variable is: " << variables[name]->clone()->to_string() << "\n";
     return variables[name]->clone();
   }
 
@@ -312,7 +324,7 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> Environment::assign_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Statement *error_expression)
   {
-    // [DEBUG**]std::cout << "[assign_variable] Assigning variable: " << name << "\n";
+    /* [DEBUG**] */ std::cout << "[assign_variable] Assigning variable: " << name << "\n";
 
     // Check for dot notation
     if (name.find('.') != std::string::npos)
@@ -396,7 +408,7 @@ namespace interpreter
 
   runtime_value *Environment::delete_variable(std::string name, ast::Statement *error_expression)
   {
-    // [DEBUG**]std::cout << "[delete_variable] Deleting variable: " << name << "\n";
+    /* [DEBUG**] */ std::cout << "[delete_variable] Deleting variable: " << name << "\n";
     if (name.find('.') != std::string::npos)
     {
       runtime_value *parent_obj = get_object_of_property_path(name, error_expression);
@@ -418,10 +430,13 @@ namespace interpreter
     }
     else
     {
+      /* [DEBUG**] */ std::cout << "[delete_variable] Resolving environment for variable: " << name << "\n";
       Environment *env = Environment::resolve(name, error_expression);
+      /* [DEBUG**] */ std::cout << "[delete_variable] Looking up variable: " << name << "\n";
       auto it = env->variables.find(name);
       if (it == env->variables.end())
       {
+        /* [DEBUG**] */ std::cout << "[delete_variable] Variable not found: " << name << "\n";
         error::Error err(
             error::ErrorCode::RUNTIME_ERROR,
             "Variable '" + name + "' not found.",
@@ -433,26 +448,31 @@ namespace interpreter
             error::ErrorImportance::MODERATE);
         return std::make_unique<null_value>().get();
       }
+      /* [DEBUG**] */ std::cout << "[delete_variable] Erasing variable: " << name << "\n";
       env->variables.erase(it);
       if (env->constants.find(name) != env->constants.end())
       {
+        /* [DEBUG**] */ std::cout << "[delete_variable] Erasing constant: " << name << "\n";
         env->constants.erase(name);
       }
       if (env->public_variables.find(name) != env->public_variables.end())
       {
+        /* [DEBUG**] */ std::cout << "[delete_variable] Erasing public variable: " << name << "\n";
         env->public_variables.erase(name);
       }
       if (env->variable_types.find(name) != env->variable_types.end())
       {
+        /* [DEBUG**] */ std::cout << "[delete_variable] Erasing variable type: " << name << "\n";
         env->variable_types.erase(name);
       }
+      /* [DEBUG**] */ std::cout << "[delete_variable] Returning null value for variable: " << name << "\n";
       return std::make_unique<null_value>().get();
     }
   }
 
   std::string Environment::lookup_variable_type(std::string name, ast::Statement *error_expression)
   {
-    // [DEBUG**]std::cout << "[get_variable_type] Getting type of variable: " << name << "\n";
+    /* [DEBUG**] */ std::cout << "[get_variable_type] Getting type of variable: " << name << "\n";
     if (name.find('.') != std::string::npos)
     {
       // TODO: Once structs are added, implement this, for now, return "any"
@@ -461,12 +481,12 @@ namespace interpreter
     else
     {
       Environment *env = Environment::resolve(name, error_expression);
-      // [DEBUG**]std::cout << "[get_variable_type] Resolved environment\n";
+      /* [DEBUG**] */ std::cout << "[get_variable_type] Resolved environment\n";
       auto it = env->variable_types.find(name);
-      // [DEBUG**]std::cout << "[get_variable_type] Found variable type: " << it->second << "\n";
+      /* [DEBUG**] */ std::cout << "[get_variable_type] Found variable type: " << it->second << "\n";
       if (it == env->variable_types.end())
       {
-        // [DEBUG**]std::cout << "[get_variable_type] Variable type not found\n";
+        /* [DEBUG**] */ std::cout << "[get_variable_type] Variable type not found\n";
         error::Error err(
             error::ErrorCode::RUNTIME_ERROR,
             "Variable '" + name + "' not found.",
@@ -476,9 +496,9 @@ namespace interpreter
             error_expression->columnend,
             "interpreter.cpp : Environment::get_variable_type : if",
             error::ErrorImportance::MODERATE);
-        // [DEBUG**]std::cout << "[get_variable_type] Error displayed\n";
+        /* [DEBUG**] */ std::cout << "[get_variable_type] Error displayed\n";
       }
-      // [DEBUG**]std::cout << "[get_variable_type] Returning variable type: " << it->second << "\n";
+      /* [DEBUG**] */ std::cout << "[get_variable_type] Returning variable type: " << it->second << "\n";
       return it->second;
     }
   }
@@ -495,20 +515,20 @@ namespace interpreter
 
   Environment *Environment::resolve(std::string name, ast::Statement *error_expression)
   {
-    // [DEBUG**]std::cout << "[resolve] Resolving variable: " << name << "\n";
+    /* [DEBUG**] */ std::cout << "[resolve] Resolving variable: " << name << "\n";
     if (variables.find(name) != variables.end())
     {
-      // [DEBUG**]std::cout << "[resolve] Found variable in current environment\n";
+      /* [DEBUG**] */ std::cout << "[resolve] Found variable in current environment\n";
       return this;
     }
     if (parent != nullptr)
     {
-      // [DEBUG**]std::cout << "[resolve] Variable not found in current environment, checking parent\n";
+      /* [DEBUG**] */ std::cout << "[resolve] Variable not found in current environment, checking parent\n";
       return parent->resolve(name, error_expression);
     }
     else
     {
-      // [DEBUG**]std::cout << "[resolve] Variable not found in any environment\n";
+      /* [DEBUG**] */ std::cout << "[resolve] Variable not found in any environment\n";
       error::Error err(
           error::ErrorCode::RUNTIME_ERROR,
           "Variable '" + name + "' not found.",
@@ -525,7 +545,7 @@ namespace interpreter
 
   Environment *create_global_environment()
   {
-    // [DEBUG**]std::cout << "[create_global_environment] Creating global environment\n";
+    /* [DEBUG**] */ std::cout << "[create_global_environment] Creating global environment\n";
     Environment *global_env = new Environment();
     global_env->declare_variable("null", std::make_unique<null_value>(false), new ast::Type("nulltype"), nullptr, true, false);
     global_env->declare_variable("true", std::make_unique<boolean_value>(true, false), new ast::Type("bool"), nullptr, true, false);
@@ -626,14 +646,9 @@ namespace interpreter
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
           runtime_value *value_rv = nullptr;
-          const ast::ReferenceExpression *value_ref = nullptr;
           if (auto value_ptr_variant = std::get_if<std::unique_ptr<runtime_value>>(&args[0]))
           {
             value_rv = value_ptr_variant->get();
-          }
-          else if (auto ref_expr_variant = std::get_if<ast::ReferenceExpression>(&args[0]))
-          {
-            value_ref = ref_expr_variant;
           }
           else
           {
@@ -687,33 +702,6 @@ namespace interpreter
             s.resize(static_cast<size_t>(size->value));
             return std::make_unique<string_value>(s, str->returned_value);
           }
-          else if (auto ref = dynamic_cast<ast::ReferenceExpression *>(const_cast<ast::ReferenceExpression *>(value_ref)))
-          {
-            auto var = env->lookup_variable(ref->name, ref);
-            if (auto arr = dynamic_cast<array_value *>(var))
-            {
-              std::vector<std::unique_ptr<runtime_value>> elems;
-              elems.reserve(static_cast<size_t>(size->value));
-              for (size_t i = 0; i < static_cast<size_t>(size->value); ++i)
-              {
-                if (i < arr->elements.size())
-                {
-                  elems.push_back(arr->elements[i]->clone());
-                }
-              }
-              auto fv = std::make_unique<array_value>(std::move(elems), arr->type, arr->returned_value);
-              env->delete_variable(ref->name, ref);
-              env->declare_variable(ref->name, std::move(fv), new ast::Type(arr->type), ref, false, false);
-            }
-            else if (auto str = dynamic_cast<string_value *>(var))
-            {
-              std::string s = str->value;
-              s.resize(static_cast<size_t>(size->value));
-              auto fv = std::make_unique<string_value>(s, str->returned_value);
-              env->delete_variable(ref->name, ref);
-              env->declare_variable(ref->name, std::move(fv), new ast::Type("string"), ref, false, false);
-            }
-          }
           else
           {
             error::Error err(error::ErrorCode::RUNTIME_ERROR,
@@ -753,7 +741,7 @@ namespace interpreter
         });
     auto append = std::make_unique<native_function_value>(
         "append",
-        "~[],any",
+        "~[]",
         2,
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
            ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
@@ -763,10 +751,12 @@ namespace interpreter
           if (auto value_ptr_variant = std::get_if<std::unique_ptr<runtime_value>>(&args[0]))
           {
             value_rv = value_ptr_variant->get();
+            std::cout << "[DEBUG] value_rv: " << (value_rv ? value_rv->to_string() : "null") << "\n";
           }
           else if (auto ref_expr_variant = std::get_if<ast::ReferenceExpression>(&args[0]))
           {
             value_ref = ref_expr_variant;
+            std::cout << "[DEBUG] value_ref: " << (value_ref ? value_ref->name : "null") << "\n";
           }
           else
           {
@@ -790,11 +780,12 @@ namespace interpreter
             error::display_all_errors(true);
             return std::make_unique<null_value>(false);
           }
-          auto elem = dynamic_cast<number_value *>(elem_ptr_variant->get());
+          runtime_value *elem = elem_ptr_variant->get();
+          std::cout << "[DEBUG] elem: " << (elem ? elem->to_string() : "nullt") << "\n";
           if (!elem)
           {
             error::Error err(error::ErrorCode::RUNTIME_ERROR,
-                             "Second argument to append must be a number.",
+                             "Second argument to append must be a value.",
                              error_expression.linestart, error_expression.lineend,
                              error_expression.columnstart, error_expression.columnend,
                              "interpreter.cpp : append", error::ErrorImportance::CRITICAL);
@@ -804,17 +795,19 @@ namespace interpreter
           if (auto arr = dynamic_cast<array_value *>(value_rv))
           {
             arr->elements.push_back(elem->clone());
+            std::cout << "[DEBUG] array after append: " << arr->to_string() << "\n";
             return arr->clone();
           }
           else if (auto ref = dynamic_cast<ast::ReferenceExpression *>(const_cast<ast::ReferenceExpression *>(value_ref)))
           {
             auto var = env->lookup_variable(ref->name, ref);
+            std::cout << "[DEBUG] var: " << (var ? var->to_string() : "null") << "\n";
             if (auto arr = dynamic_cast<array_value *>(var))
             {
               arr->elements.push_back(elem->clone());
-              // Explicitly update the variable in the environment so it holds the new array
-              auto updated = env->assign_variable(ref->name, std::make_unique<array_value>(*arr), ref);
-              return updated->clone();
+              auto updated = std::make_unique<array_value>(std::move(arr->elements), arr->type, arr->returned_value);
+              std::cout << "[DEBUG] updated array: " << updated->to_string() << "\n";
+              return std::move(updated);
             }
           }
           else
@@ -842,33 +835,33 @@ namespace interpreter
   //*------------------
   std::unique_ptr<runtime_value> interpret_program(ast::Program *program, Environment *env)
   {
-    // [DEBUG**]std::cout << "[interpret_program] Starting with " << program->body.size() << " statements\n";
+    /* [DEBUG**] */ std::cout << "[interpret_program] Starting with " << program->body.size() << " statements\n";
     std::unique_ptr<runtime_value> result = std::make_unique<null_value>(false);
 
     for (const auto &stmt : program->body)
     {
-      // [DEBUG**]std::cout << "[interpret_program] Interpreting statement of kind: " << ast::statement_kind_to_string(stmt->kind) << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret_program] Interpreting statement of kind: " << ast::statement_kind_to_string(stmt->kind) << "\n";
       ast::ASTVariant variant = stmt;
       result = interpret(&variant, env, false);
     }
 
-    // [DEBUG**]std::cout << "[interpret_program] Finished interpreting program with result of " << result->to_string() << "\n";
+    /* [DEBUG**] */ std::cout << "[interpret_program] Finished interpreting program with result of " << result->to_string() << "\n";
     return result;
   }
 
   std::unique_ptr<runtime_value> interpret_block_statement(ast::BlockStatement *program, Environment *env)
   {
-    // [DEBUG**]std::cout << "[interpret_block_statement] Starting with " << program->body.size() << " statements\n";
+    /* [DEBUG**] */ std::cout << "[interpret_block_statement] Starting with " << program->body.size() << " statements\n";
     std::unique_ptr<runtime_value> result = std::make_unique<null_value>(false);
 
     for (const auto &stmt : program->body)
     {
-      // [DEBUG**]std::cout << "[interpret_block_statement] Interpreting statement of kind: " << ast::statement_kind_to_string(stmt->kind) << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret_block_statement] Interpreting statement of kind: " << ast::statement_kind_to_string(stmt->kind) << "\n";
       ast::ASTVariant variant = stmt;
       std::unique_ptr<runtime_value> res = interpret(&variant, env, false);
       if (res->returned_value || stmt->kind == ast::StatementKind::RETURN_STATEMENT)
       {
-        // [DEBUG**]std::cout << "[interpret_block_statement] Found return statement\n";
+        /* [DEBUG**] */ std::cout << "[interpret_block_statement] Found return statement\n";
         result = std::move(res);
         break;
       }
@@ -883,16 +876,16 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_expression_statement(ast::ExpressionStatement *statement, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_expression_statement] Interpreting expression statement\n";
+    /* [DEBUG**] */ std::cout << "[interpret_expression_statement] Interpreting expression statement\n";
     auto exprStmt = dynamic_cast<ast::ExpressionStatement *>(statement);
     ast::ASTVariant variant = exprStmt->expression;
-    // [DEBUG**]std::cout << "[interpret_expression_statement] Result of expression: " << interpret(&variant, env, is_returned)->to_string() << "\n";
+    /* [DEBUG**] */ std::cout << "[interpret_expression_statement] Result of expression: " << interpret(&variant, env, is_returned)->to_string() << "\n";
     return interpret(&variant, env, is_returned);
   }
 
   std::unique_ptr<runtime_value> interpret_variable_declaration_statement(ast::VariableDeclarationStatement *statement, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_variable_declaration_statement] Interpreting variable declaration statement\n";
+    /* [DEBUG**] */ std::cout << "[interpret_variable_declaration_statement] Interpreting variable declaration statement\n";
     auto var_decl = dynamic_cast<ast::VariableDeclarationStatement *>(statement);
     std::unique_ptr<runtime_value> value = nullptr;
 
@@ -927,7 +920,7 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_return_statement(ast::ReturnStatement *statement, interpreter::Environment *env)
   {
-    // [DEBUG**]std::cout << "[interpret_return_statement] Interpreting return statement\n";
+    /* [DEBUG**] */ std::cout << "[interpret_return_statement] Interpreting return statement\n";
     auto return_stmt = dynamic_cast<ast::ReturnStatement *>(statement);
     std::unique_ptr<runtime_value> value = nullptr;
 
@@ -942,7 +935,7 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_function_declaration_statement(ast::FunctionDeclarationStatement *statement, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_function_declaration_statement] Interpreting function declaration statement\n";
+    /* [DEBUG**] */ std::cout << "[interpret_function_declaration_statement] Interpreting function declaration statement\n";
     auto fn_decl = dynamic_cast<ast::FunctionDeclarationStatement *>(statement);
     std::unique_ptr<runtime_value> fn = env->declare_variable(fn_decl->name, std::make_unique<function_value>(fn_decl->name, fn_decl->parameters, fn_decl->body, fn_decl->return_type, fn_decl->return_statement, env), &fn_decl->return_type, fn_decl, false, false);
     return fn;
@@ -950,7 +943,7 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_if_statement(ast::IfStatement *statement, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_if_statement] Interpreting if statement\n";
+    /* [DEBUG**] */ std::cout << "[interpret_if_statement] Interpreting if statement\n";
     auto if_stmt = dynamic_cast<ast::IfStatement *>(statement);
     ast::ASTVariant condition_variant = if_stmt->condition;
     std::unique_ptr<runtime_value> condition = interpret(&condition_variant, env, false);
@@ -976,21 +969,21 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_for_loop_statement(ast::ForLoopStatement *statement, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_for_loop_statement] Interpreting for loop statement\n";
+    /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] Interpreting for loop statement\n";
     auto for_loop = dynamic_cast<ast::ForLoopStatement *>(statement);
-    // [DEBUG**]std::cout << "[interpret_for_loop_statement] For loop with array of: " << (for_loop->of_loop) << "\n";
+    /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] For loop with array of: " << (for_loop->of_loop) << "\n";
     if (for_loop->of_loop == false)
     {
-      // [DEBUG**]std::cout << "[interpret_for_loop_statement] Found for loop with initializer\n";
+      /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] Found for loop with initializer\n";
       if (for_loop->initializer)
       {
-        // [DEBUG**]std::cout << "[interpret_for_loop_statement] Found initializer\n";
+        /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] Found initializer\n";
         ast::ASTVariant init_variant = for_loop->initializer;
         interpret(&init_variant, env, false);
       }
       else
       {
-        // [DEBUG**]std::cout << "[interpret_for_loop_statement] No initializer found\n";
+        /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] No initializer found\n";
       }
       int num_iterations = 0;
       while (true)
@@ -1112,11 +1105,11 @@ namespace interpreter
   //*-------------------
   std::unique_ptr<runtime_value> interpret_binary_expression(ast::BinaryExpression *expression, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_binary_expression] Interpreting binary expression\n";
+    /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Interpreting binary expression\n";
     auto bin = dynamic_cast<ast::BinaryExpression *>(expression);
     if (!bin || !bin->left || !bin->right)
     {
-      // [DEBUG**]std::cout << "[interpret_binary_expression] Invalid binary expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Invalid binary expression\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
 
@@ -1125,13 +1118,13 @@ namespace interpreter
     ast::ASTVariant right_variant = bin->right;
     auto rhs = interpret(&right_variant, env, false);
 
-    // [DEBUG**]std::cout << "[interpret_binary_expression] " << bin->op.value << " LHS: " << lhs->to_string() << " RHS: " << rhs->to_string() << "\n";
+    /* [DEBUG**] */ std::cout << "[interpret_binary_expression] " << bin->op.value << " LHS: " << lhs->to_string() << " RHS: " << rhs->to_string() << "\n";
 
     if (auto lnum = dynamic_cast<number_value *>(lhs.get()))
     {
       if (auto rnum = dynamic_cast<number_value *>(rhs.get()))
       {
-        // [DEBUG**]std::cout << "[interpret_binary_expression] Adding numbers: " << lnum->value << " + " << rnum->value << "\n";
+        /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Adding numbers: " << lnum->value << " + " << rnum->value << "\n";
         if (bin->op.value == "+")
         {
           return std::make_unique<number_value>(lnum->value + rnum->value, is_returned);
@@ -1230,7 +1223,7 @@ namespace interpreter
     auto call = dynamic_cast<ast::CallExpression *>(expression);
     if (!call || !call->function)
     {
-      // [DEBUG**]std::cout << "[interpret_call_expression] Invalid call expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret_call_expression] Invalid call expression\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
 
@@ -1239,7 +1232,7 @@ namespace interpreter
 
     if (auto fn_val = dynamic_cast<function_value *>(fn.get()))
     {
-      // [DEBUG**]std::cout << "[interpret_call_expression] Calling function: " << fn_val->name << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret_call_expression] Calling function: " << fn_val->name << "\n";
       Environment *closure = new Environment();
       closure->parent = fn_val->closure;
       for (size_t i = 0; i < fn_val->parameters.size(); i++)
@@ -1280,8 +1273,8 @@ namespace interpreter
     }
     else if (auto native_fn_val = dynamic_cast<native_function_value *>(fn.get()))
     {
-      // [DEBUG**]std::cout << "Calling native function: " << native_fn_val->name << "\n";
-      // [DEBUG**]std::cout << "[interpret_call_expression] Calling native function: " << native_fn_val->name << "\n";
+      /* [DEBUG**] */ std::cout << "Calling native function: " << native_fn_val->name << "\n";
+      /* [DEBUG**] */ std::cout << "[interpret_call_expression] Calling native function: " << native_fn_val->name << "\n";
       std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> args;
       for (const auto &arg : call->args)
       {
@@ -1316,8 +1309,14 @@ namespace interpreter
             continue;
           }
         }
+        if (auto ref_expr = dynamic_cast<ast::ReferenceExpression *>(arg))
+        {
+          /* [DEBUG**] */ std::cout << "[interpret_call_expression] Argument Ref: " << ref_expr->name << "\n";
+        }
         ast::ASTVariant arg_variant = arg;
-        args.push_back(interpret(&arg_variant, env, false));
+        auto res = interpret(&arg_variant, env, false);
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Argument: " << res->to_string() << "\n";
+        args.push_back(std::move(res));
       }
       if (args.size() < native_fn_val->arity && native_fn_val->arity != -1)
       {
@@ -1371,7 +1370,7 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_variable_declaration_expression(ast::VariableDeclarationExpression *expression, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_variable_declaration_expression] Interpreting variable declaration expression\n";
+    /* [DEBUG**] */ std::cout << "[interpret_variable_declaration_expression] Interpreting variable declaration expression\n";
     auto var_decl = dynamic_cast<ast::VariableDeclarationExpression *>(expression);
     std::unique_ptr<runtime_value> value = nullptr;
 
@@ -1398,14 +1397,14 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_assignment_expression(ast::AssignmentExpression *expresssion, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpet_assignment_expression] Interpreting assignment expression\n";
+    /* [DEBUG**] */ std::cout << "[interpet_assignment_expression] Interpreting assignment expression\n";
     auto assign = dynamic_cast<ast::AssignmentExpression *>(expresssion);
     if (assign->increment_decrement)
     {
-      // [DEBUG**]std::cout << "[interpet_assignment_expression] Increment/Decrement assignment\n";
+      /* [DEBUG**] */ std::cout << "[interpet_assignment_expression] Increment/Decrement assignment\n";
       if (assign->op.value == "++")
       {
-        // [DEBUG**]std::cout << "[interpet_assignment_expression] Incrementing\n";
+        /* [DEBUG**] */ std::cout << "[interpet_assignment_expression] Incrementing\n";
         ast::ASTVariant left_variant = assign->left;
         auto lhs = interpret(&left_variant, env, false);
         if (auto lnum = dynamic_cast<number_value *>(lhs.get()))
@@ -1434,7 +1433,7 @@ namespace interpreter
       }
       else if (assign->op.value == "--")
       {
-        // [DEBUG**]std::cout << "[interpet_assignment_expression] Decrementing\n";
+        /* [DEBUG**] */ std::cout << "[interpet_assignment_expression] Decrementing\n";
         ast::ASTVariant left_variant = assign->left;
         auto lhs = interpret(&left_variant, env, false);
         if (auto lnum = dynamic_cast<number_value *>(lhs.get()))
@@ -1445,7 +1444,7 @@ namespace interpreter
     }
     else if (!assign || !assign->left || !assign->right)
     {
-      // [DEBUG**]std::cout << "[interpet_assignment_expression] Invalid assignment expression\n";
+      /* [DEBUG**] */ std::cout << "[interpet_assignment_expression] Invalid assignment expression\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
 
@@ -1541,11 +1540,11 @@ namespace interpreter
 
   std::unique_ptr<runtime_value> interpret_member_expression(ast::MemberExpression *expression, interpreter::Environment *env, bool is_returned)
   {
-    // [DEBUG**]std::cout << "[interpret_member_expression] Interpreting member expression\n";
+    /* [DEBUG**] */ std::cout << "[interpret_member_expression] Interpreting member expression\n";
     auto mem = dynamic_cast<ast::MemberExpression *>(expression);
     if (!mem || !mem->object || !mem->property)
     {
-      // [DEBUG**]std::cout << "[interpret_member_expression] Invalid member expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret_member_expression] Invalid member expression\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
 
@@ -1562,7 +1561,7 @@ namespace interpreter
     }
     else
     {
-      // [DEBUG**]std::cout << "[interpret_member_expression] Invalid member expression\n";
+      /* [DEBUG**] */ std::cout << "[interpret_member_expression] Invalid member expression\n";
       return std::make_unique<dummy_value>(); // replaced null_value
     }
 
@@ -1629,18 +1628,62 @@ namespace interpreter
     }
     else if (property == "append")
     {
-      if (auto arr_val = dynamic_cast<array_value *>(obj.get()))
+      // Ensure mem->object is a valid ReferenceExpression
+      auto refObj = dynamic_cast<ast::ReferenceExpression *>(mem->object);
+      if (!refObj)
       {
-        return std::make_unique<native_function_value>(
-            "append",
-            "~[],any",
-            1,
-            [mem](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
-                  ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
-            {
-
-            });
+        error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                         "'append' property expects its parent to be a variable reference.",
+                         mem->linestart, mem->lineend, mem->columnstart, mem->columnend,
+                         "interpreter.cpp : interpret_member_expression", error::ErrorImportance::CRITICAL);
+        return std::make_unique<null_value>(false);
       }
+      return std::make_unique<native_function_value>(
+          "append",
+          "null",
+          1,
+          [refObj, mem](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
+                        ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
+          {
+            /* [DEBUG**] */ std::cout << "[DEBUG] Entered native function lambda for 'append'\n";
+            // Look up the array variable safely via its reference name
+            runtime_value *var = env->lookup_variable(refObj->name, mem);
+            auto arr = dynamic_cast<array_value *>(var);
+            if (!arr)
+            {
+              error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                               "'append' property can only be applied on arrays.",
+                               error_expression.linestart, error_expression.lineend,
+                               error_expression.columnstart, error_expression.columnend,
+                               "interpreter.cpp : append lambda", error::ErrorImportance::CRITICAL);
+              return std::make_unique<null_value>(false);
+            }
+            // Interpret the argument to be appended
+            std::unique_ptr<runtime_value> elem;
+            if (auto elem_variant = std::get_if<std::unique_ptr<runtime_value>>(&args[0]))
+            {
+              elem = (*elem_variant)->clone();
+            }
+            else
+            {
+              error::Error err(error::ErrorCode::RUNTIME_ERROR,
+                               "Invalid argument for 'append'; expected a value.",
+                               error_expression.linestart, error_expression.lineend,
+                               error_expression.columnstart, error_expression.columnend,
+                               "interpreter.cpp : append lambda", error::ErrorImportance::CRITICAL);
+              return std::make_unique<null_value>(false);
+            }
+            // Push a clone of the argument into the array
+            arr->elements.push_back(elem->clone());
+            // Update the variable in the environment
+            bool is_const = env->is_variable_constant(refObj->name);
+            bool is_public = env->is_variable_public(refObj->name);
+            ast::Type type = ast::Type(env->lookup_variable_type(refObj->name, mem));
+            env->delete_variable(refObj->name, mem);
+            env->declare_variable(refObj->name, std::make_unique<array_value>(*arr), &type, mem, is_const, is_public);
+            /* [DEBUG**] */ std::cout << "[DEBUG] Updated array: " << arr->to_string() << "\n";
+            return std::make_unique<null_value>(false);
+          });
     }
     if (auto obj_val = dynamic_cast<object_value *>(obj.get()))
     {

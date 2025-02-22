@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "../lexer/lexer.h"
 #include "../ast/ast.h"
+#include "../interpreter/interpreter.h"
 #include <iostream> // Add for debugging
 
 namespace parser
@@ -120,6 +121,7 @@ namespace parser
   std::vector<ast::Expression *> parse_args(parser_ &parser);
   std::vector<ast::ParameterExpression *> parse_parameters(parser_ &parser);
   std::vector<std::pair<ast::Expression *, ast::Expression *>> parse_properties(parser_ &parser);
+  ast::Expression *runtime_to_ast(interpreter::runtime_value *value);
 }
 
 #endif // PARSER_H
