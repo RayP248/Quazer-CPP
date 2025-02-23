@@ -1,7 +1,7 @@
--* append property test *-
-const nums = [];
+-* push property test *-
+let nums = [];
 outln("nums before: ", nums);
 for (let i = 0; i < 10; i++) {
-  nums.append(i);
+  nums.push(i);
 }
 outln("nums after: ", nums);

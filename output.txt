@@ -6,7 +6,7 @@ Program {
       linestart: 2,
       lineend: 2,
       columnstart: 0,
-      columnend: 16,
+      columnend: 14,
       name: "nums",
       type: 
         Type {
@@ -19,13 +19,13 @@ Program {
           kind: 13,
           linestart: 2,
           lineend: 2,
-          columnstart: 13,
-          columnend: 14,
+          columnstart: 11,
+          columnend: 12,
           elements: [
 
           ]
         },
-      is_const: true,
+      is_const: false,
       is_public: false
     },
     ExpressionStatement {
@@ -177,21 +177,21 @@ Program {
               linestart: 5,
               lineend: 5,
               columnstart: 2,
-              columnend: 16,
+              columnend: 14,
               expression:
                 CallExpression {
                   kind: 16,
                   linestart: 5,
                   lineend: 5,
                   columnstart: 2,
-                  columnend: 16,
+                  columnend: 14,
                   function:
                     MemberExpression {
                       kind: 19,
                       linestart: 5,
                       lineend: 5,
                       columnstart: 2,
-                      columnend: 13,,
+                      columnend: 11,,
                       object:
                         SymbolExpression {
                           kind: 11,
@@ -207,8 +207,8 @@ Program {
                           linestart: 5,
                           lineend: 5,
                           columnstart: 7,
-                          columnend: 13,
-                          value: "append"
+                          columnend: 11,
+                          value: "push"
                         }
                     },
                   args: [
@@ -216,8 +216,8 @@ Program {
                       kind: 11,
                       linestart: 5,
                       lineend: 5,
-                      columnstart: 14,
-                      columnend: 15,
+                      columnstart: 12,
+                      columnend: 13,
                       value: "i"
                     }
                   ]

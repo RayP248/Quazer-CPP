@@ -297,7 +297,7 @@ namespace interpreter
 
   struct array_value : runtime_value
   {
-    std::vector<std::unique_ptr<runtime_value>> elements; // changed to unique_ptr
+    std::vector<std::unique_ptr<runtime_value>> elements;
     array_value()
     {
       returned_value = false;
@@ -339,8 +339,8 @@ namespace interpreter
         elements.push_back(element->clone());
       }
       type = other.type;
+      returned_value = other.returned_value;
     }
-
     std::string to_string() const override
     {
       std::string str = "[";
@@ -357,14 +357,15 @@ namespace interpreter
     }
     std::unique_ptr<runtime_value> clone() const override
     {
-      auto new_arr = std::make_unique<array_value>(*this);
+      /*auto new_arr = std::make_unique<array_value>(*this);
       // Optionally deep-clone each element:
       for (size_t i = 0; i < new_arr->elements.size(); i++)
       {
         new_arr->elements[i] = std::unique_ptr<runtime_value>(
             this->elements[i]->clone().release());
       }
-      return new_arr;
+      return new_arr;*/
+      return std::make_unique<array_value>(*this);
     }
   };
 
