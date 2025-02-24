@@ -7,7 +7,6 @@
 #include <fstream>
 #include <functional>
 #include <regex>
-#include "../type-checker/types.h"
 #include <algorithm>
 #include <cstdlib> // For malloc and free
 namespace interpreter
@@ -204,7 +203,7 @@ namespace interpreter
     /* [DEBUG**] */ std::cout << "[Environment] Created environment with package name: " << this->package_name << "\n";
   }
 
-  std::unique_ptr<runtime_value> Environment::declare_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Type *explicit_type, ast::Statement *error_expression, bool is_constant, bool is_public)
+  std::unique_ptr<runtime_value> Environment::declare_variable(std::string name, std::unique_ptr<runtime_value> value, ast::Statement *error_expression, bool is_constant, bool is_public)
   {
     /* [DEBUG**] */ std::cout << "[declare_variable] Declaring variable: " << name << "\n";
     if (variables.find(name) != variables.end())
@@ -245,17 +244,6 @@ namespace interpreter
     {
       /* [DEBUG**] */ std::cout << "[declare_variable] Variable is public\n";
       public_variables.insert(name);
-    }
-    /* [DEBUG**] */ std::cout << "[declare_variable] Variable type is " << (explicit_type ? explicit_type->raw_name : "null") << "\n";
-    if (explicit_type == nullptr || explicit_type->raw_name == "nulltype")
-    {
-      /* [DEBUG**] */ std::cout << "[declare_variable] Variable type is nulltype\n";
-      variable_types.emplace(name, "nulltype");
-    }
-    else
-    {
-      /* [DEBUG**] */ std::cout << "[declare_variable] Variable type is not nulltype\n";
-      variable_types.emplace(name, explicit_type->raw_name);
     }
     /* [DEBUG**] */ std::cout << "[declare_variable] Returning variable: " << name << "\n";
     /* [DEBUG**] */ std::cout << "[declare_variable] Variable is: " << variables[name]->clone()->to_string() << "\n";
@@ -407,7 +395,7 @@ namespace interpreter
           "interpreter.cpp : Environment::lookup_variable : if",
           error::ErrorImportance::MODERATE);
     }
-    return it->second.get();
+    return it->second->clone().release();
   }
 
   runtime_value *Environment::delete_variable(std::string name, ast::Statement *error_expression)
@@ -464,47 +452,8 @@ namespace interpreter
         /* [DEBUG**] */ std::cout << "[delete_variable] Erasing public variable: " << name << "\n";
         env->public_variables.erase(name);
       }
-      if (env->variable_types.find(name) != env->variable_types.end())
-      {
-        /* [DEBUG**] */ std::cout << "[delete_variable] Erasing variable type: " << name << "\n";
-        env->variable_types.erase(name);
-      }
       /* [DEBUG**] */ std::cout << "[delete_variable] Returning null value for variable: " << name << "\n";
       return std::make_unique<null_value>().get();
-    }
-  }
-
-  std::string Environment::lookup_variable_type(std::string name, ast::Statement *error_expression)
-  {
-    /* [DEBUG**] */ std::cout << "[get_variable_type] Getting type of variable: " << name << "\n";
-    if (name.find('.') != std::string::npos)
-    {
-      // TODO: Once structs are added, implement this, for now, return "any"
-      return "any";
-    }
-    else
-    {
-      Environment *env = Environment::resolve(name, error_expression);
-      /* [DEBUG**] */ std::cout << "[get_variable_type] Resolved environment\n";
-      auto it = env->variable_types.find(name);
-      /* [DEBUG**] */ std::cout << "[get_variable_type] Found variable type: " << it->second << "\n";
-      if (it == env->variable_types.end())
-      {
-        /* [DEBUG**] */ std::cout << "[get_variable_type] Variable type not found\n";
-        error::Error err(
-            error::ErrorCode::RUNTIME_ERROR,
-            "Variable '" + name + "' not found.",
-            error_expression->linestart,
-            error_expression->lineend,
-            error_expression->columnstart,
-            error_expression->columnend,
-            "interpreter.cpp : Environment::get_variable_type : if",
-            error::ErrorImportance::MODERATE);
-        /* [DEBUG**] */ std::cout << "[get_variable_type] Error displayed\n";
-        return "undefined";
-      }
-      /* [DEBUG**] */ std::cout << "[get_variable_type] Returning variable type: " << it->second << "\n";
-      return it->second;
     }
   }
 
@@ -552,13 +501,12 @@ namespace interpreter
   {
     /* [DEBUG**] */ std::cout << "[create_global_environment] Creating global environment\n";
     Environment *global_env = new Environment();
-    global_env->declare_variable("null", std::make_unique<null_value>(false), new ast::Type("nulltype"), nullptr, true, false);
-    global_env->declare_variable("true", std::make_unique<boolean_value>(true, false), new ast::Type("bool"), nullptr, true, false);
-    global_env->declare_variable("false", std::make_unique<boolean_value>(false, false), new ast::Type("bool"), nullptr, true, false);
+    global_env->declare_variable("null", std::make_unique<null_value>(false), nullptr, true, false);
+    global_env->declare_variable("true", std::make_unique<boolean_value>(true, false), nullptr, true, false);
+    global_env->declare_variable("false", std::make_unique<boolean_value>(false, false), nullptr, true, false);
 
     auto out_fn = std::make_unique<native_function_value>(
         "out",
-        "nulltype",
         -1,
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
@@ -590,7 +538,6 @@ namespace interpreter
         });
     auto outln_fn = std::make_unique<native_function_value>(
         "outln",
-        "nulltype",
         -1,
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
@@ -624,7 +571,6 @@ namespace interpreter
 
     auto in = std::make_unique<native_function_value>(
         "in",
-        "string",
         -1,
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
@@ -646,7 +592,6 @@ namespace interpreter
         });
     auto alloc = std::make_unique<native_function_value>(
         "alloc",
-        "~[],string",
         2,
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args, ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
         {
@@ -699,7 +644,7 @@ namespace interpreter
                 elems.push_back(arr->elements[i]->clone());
               }
             }
-            return std::make_unique<array_value>(std::move(elems), arr->type, arr->returned_value);
+            return std::make_unique<array_value>(std::move(elems), arr->returned_value);
           }
           else if (auto str = dynamic_cast<string_value *>(value_rv))
           {
@@ -720,7 +665,6 @@ namespace interpreter
         });
     auto free = std::make_unique<native_function_value>(
         "free",
-        "nulltype",
         1,
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
            ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
@@ -746,7 +690,6 @@ namespace interpreter
         });
     auto append = std::make_unique<native_function_value>(
         "append",
-        "~[]",
         2,
         [](const std::vector<std::variant<std::unique_ptr<runtime_value>, ast::ReferenceExpression>> &args,
            ast::Expression &error_expression, Environment *env) -> std::unique_ptr<runtime_value>
@@ -810,7 +753,7 @@ namespace interpreter
             if (auto arr = dynamic_cast<array_value *>(var))
             {
               arr->elements.push_back(elem->clone());
-              auto updated = std::make_unique<array_value>(std::move(arr->elements), arr->type, arr->returned_value);
+              auto updated = std::make_unique<array_value>(std::move(arr->elements), arr->returned_value);
               std::cout << "[DEBUG] updated array: " << updated->to_string() << "\n";
               return std::move(updated);
             }
@@ -826,12 +769,12 @@ namespace interpreter
           }
           return std::make_unique<null_value>(false);
         });
-    global_env->declare_variable("out", std::move(out_fn), new ast::Type("native_function"), nullptr, true, false);
-    global_env->declare_variable("outln", std::move(outln_fn), new ast::Type("native_function"), nullptr, true, false);
-    global_env->declare_variable("in", std::move(in), new ast::Type("native_function"), nullptr, true, false);
-    global_env->declare_variable("alloc", std::move(alloc), new ast::Type("native_function"), nullptr, true, false);
-    global_env->declare_variable("free", std::move(free), new ast::Type("native_function"), nullptr, true, false);
-    global_env->declare_variable("append", std::move(append), new ast::Type("native_function"), nullptr, true, false);
+    global_env->declare_variable("out", std::move(out_fn), nullptr, true, false);
+    global_env->declare_variable("outln", std::move(outln_fn), nullptr, true, false);
+    global_env->declare_variable("in", std::move(in), nullptr, true, false);
+    global_env->declare_variable("alloc", std::move(alloc), nullptr, true, false);
+    global_env->declare_variable("free", std::move(free), nullptr, true, false);
+    global_env->declare_variable("append", std::move(append), nullptr, true, false);
     return global_env;
   }
 
@@ -899,28 +842,8 @@ namespace interpreter
     {
       ast::ASTVariant variant = var_decl->value;
       value = interpret(&variant, env, is_returned);
-      // If the evaluated value is an empty array, update its type to the declared type
-      if (auto arr = dynamic_cast<array_value *>(value.get()))
-      {
-        if (arr->elements.empty() && var_decl->type.raw_name.rfind("[]", 0) == 0)
-        {
-          arr->type = var_decl->type.raw_name;
-        }
-      }
-      // New type-check on variable declaration
-      if (value && !type_checker::is_matching_type(var_decl->type, *value))
-      {
-        error::Error err(
-            error::ErrorCode::RUNTIME_ERROR,
-            "Variable declaration type mismatch for '" + var_decl->name + "'. Expected '" +
-                var_decl->type.raw_name + "', got '" + value->type + "'.",
-            var_decl->linestart, var_decl->lineend, var_decl->columnstart, var_decl->columnend,
-            "interpreter.cpp : interpret_variable_declaration_statement",
-            error::ErrorImportance::MODERATE);
-        return std::make_unique<null_value>(is_returned);
-      }
     }
-    std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), &var_decl->type, var_decl, var_decl->is_const, var_decl->is_public);
+    std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), var_decl, var_decl->is_const, var_decl->is_public);
     return finalval;
   }
 
@@ -943,7 +866,7 @@ namespace interpreter
   {
     /* [DEBUG**] */ std::cout << "[interpret_function_declaration_statement] Interpreting function declaration statement\n";
     auto fn_decl = dynamic_cast<ast::FunctionDeclarationStatement *>(statement);
-    std::unique_ptr<runtime_value> fn = env->declare_variable(fn_decl->name, std::make_unique<function_value>(fn_decl->name, fn_decl->parameters, fn_decl->body, fn_decl->return_type, fn_decl->return_statement, env), &fn_decl->return_type, fn_decl, false, false);
+    std::unique_ptr<runtime_value> fn = env->declare_variable(fn_decl->name, std::make_unique<function_value>(fn_decl->name, fn_decl->parameters, fn_decl->body, fn_decl->return_statement, env), fn_decl, false, false);
     return fn;
   }
 
@@ -980,12 +903,12 @@ namespace interpreter
     /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] For loop with array of: " << (for_loop->of_loop) << "\n";
     if (for_loop->of_loop == false)
     {
-      /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] Found for loop with initializer\n";
+      /* Create a new child environment for the loop scope */
+      Environment *loopEnv = new Environment("", env);
       if (for_loop->initializer)
       {
-        /* [DEBUG**] */ std::cout << "[interpret_for_loop_statement] Found initializer\n";
         ast::ASTVariant init_variant = for_loop->initializer;
-        interpret(&init_variant, env, false);
+        interpret(&init_variant, loopEnv, false);
       }
       else
       {
@@ -998,7 +921,7 @@ namespace interpreter
         std::cout << "[interpret_for_loop_statement] Iteration: " << num_iterations << "\n";
         ast::ASTVariant cond_variant = for_loop->condition;
         std::cout << "[interpret_for_loop_statement] Evaluating loop condition\n";
-        auto cond_val = interpret(&cond_variant, env, false);
+        auto cond_val = interpret(&cond_variant, loopEnv, false);
         std::cout << "[interpret_for_loop_statement] Condition evaluated to: " << cond_val->to_string() << "\n";
         auto cond_bool = dynamic_cast<boolean_value *>(cond_val.get());
         if (!cond_bool || !cond_bool->value)
@@ -1010,7 +933,7 @@ namespace interpreter
         {
           std::cout << "[interpret_for_loop_statement] Evaluating loop body\n";
           ast::ASTVariant body_variant = for_loop->body;
-          std::unique_ptr<runtime_value> result = interpret(&body_variant, env, false);
+          std::unique_ptr<runtime_value> result = interpret(&body_variant, loopEnv, false);
           std::cout << "[interpret_for_loop_statement] Loop body result: " << result->to_string() << "\n";
           if (result->returned_value)
           {
@@ -1022,7 +945,7 @@ namespace interpreter
         {
           std::cout << "[interpret_for_loop_statement] Evaluating post-expression\n";
           ast::ASTVariant post_variant = for_loop->post;
-          interpret(&post_variant, env, false);
+          interpret(&post_variant, loopEnv, false);
         }
         num_iterations++;
         std::cout << "[interpret_for_loop_statement] End of iteration " << num_iterations << "\n";
@@ -1071,7 +994,7 @@ namespace interpreter
         {
           for (size_t i = 0; i < arr->elements.size(); i++)
           {
-            env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
+            env->declare_variable(var_name, arr->elements[i]->clone(), for_loop->initializer, false, false);
             if (for_loop->body)
             {
               ast::ASTVariant body_variant = for_loop->body;
@@ -1095,7 +1018,7 @@ namespace interpreter
         {
           for (size_t i = 0; i < arr->elements.size(); i++)
           {
-            env->declare_variable(var_name, arr->elements[i]->clone(), nullptr, for_loop->initializer, false, false);
+            env->declare_variable(var_name, arr->elements[i]->clone(), for_loop->initializer, false, false);
             if (for_loop->body)
             {
               ast::ASTVariant body_variant = for_loop->body;
@@ -1140,93 +1063,114 @@ namespace interpreter
     {
       if (auto rnum = dynamic_cast<number_value *>(rhs.get()))
       {
-        /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Adding numbers: " << lnum->value << " + " << rnum->value << "\n";
         if (bin->op.value == "+")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Adding numbers\n";
           return std::make_unique<number_value>(lnum->value + rnum->value, is_returned);
         }
         else if (bin->op.value == "*")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Multiplying numbers\n";
           return std::make_unique<number_value>(lnum->value * rnum->value, is_returned);
         }
         else if (bin->op.value == "-")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Subtracting numbers\n";
           return std::make_unique<number_value>(lnum->value - rnum->value, is_returned);
         }
         else if (bin->op.value == "/")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Dividing numbers\n";
           if (rnum->value == 0)
           {
             error::Error err(error::ErrorCode::RUNTIME_ERROR, "Division by zero.", bin->linestart, bin->lineend, bin->columnstart, bin->columnend, "interpreter.cpp : interpret_binary_expression : if", error::ErrorImportance::MODERATE);
+            error::display_all_errors(true);
           }
           return std::make_unique<number_value>(lnum->value / rnum->value, is_returned);
         }
         else if (bin->op.value == "%")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Modulo of numbers\n";
           return std::make_unique<number_value>(std::fmod(lnum->value, rnum->value), is_returned);
         }
         else if (bin->op.value == "==")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Comparing numbers for equality\n";
           return std::make_unique<boolean_value>(lnum->value == rnum->value, is_returned);
         }
         else if (bin->op.value == "!=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Comparing numbers for inequality\n";
           return std::make_unique<boolean_value>(lnum->value != rnum->value, is_returned);
         }
         else if (bin->op.value == ">")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Comparing numbers for greater than\n";
           return std::make_unique<boolean_value>(lnum->value > rnum->value, is_returned);
         }
         else if (bin->op.value == ">=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Comparing numbers for greater than or equal\n";
           return std::make_unique<boolean_value>(lnum->value >= rnum->value, is_returned);
         }
         else if (bin->op.value == "<")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Comparing numbers for less than\n";
           return std::make_unique<boolean_value>(lnum->value < rnum->value, is_returned);
         }
         else if (bin->op.value == "<=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Comparing numbers for less than or equal\n";
           return std::make_unique<boolean_value>(lnum->value <= rnum->value, is_returned);
         }
         else if (bin->op.value == "&&")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Logical AND of numbers\n";
           return std::make_unique<boolean_value>(lnum->value && rnum->value, is_returned);
         }
         else if (bin->op.value == "||")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Logical OR of numbers\n";
           return std::make_unique<boolean_value>(lnum->value || rnum->value, is_returned);
         }
         else if (bin->op.value == "+=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Adding numbers and assigning\n";
           return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(bin->left)->value, std::make_unique<number_value>(lnum->value + rnum->value, is_returned), bin);
         }
         else if (bin->op.value == "-=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Subtracting numbers and assigning\n";
           return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(bin->left)->value, std::make_unique<number_value>(lnum->value - rnum->value, is_returned), bin);
         }
         else if (bin->op.value == "*=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Multiplying numbers and assigning\n";
           return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(bin->left)->value, std::make_unique<number_value>(lnum->value * rnum->value, is_returned), bin);
         }
         else if (bin->op.value == "/=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Dividing numbers and assigning\n";
           return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(bin->left)->value, std::make_unique<number_value>(lnum->value / rnum->value, is_returned), bin);
         }
         else if (bin->op.value == "%=")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Modulo of numbers and assigning\n";
           return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(bin->left)->value, std::make_unique<number_value>(std::fmod(lnum->value, rnum->value), is_returned), bin);
         }
         else if (bin->op.value == "++")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Incrementing number\n";
           return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(bin->left)->value, std::make_unique<number_value>(lnum->value + 1, is_returned), bin);
         }
         else if (bin->op.value == "--")
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Decrementing number\n";
           return env->assign_variable(dynamic_cast<ast::SymbolExpression *>(bin->left)->value, std::make_unique<number_value>(lnum->value - 1, is_returned), bin);
         }
         else
         {
+          /* [DEBUG**] */ std::cout << "[interpret_binary_expression] Invalid operator for number types: '" << bin->op.value << "'\n";
           error::Error err(error::ErrorCode::RUNTIME_ERROR, "Invalid operator for number types: '" + bin->op.value + "'", bin->linestart, bin->lineend, bin->columnstart, bin->columnend, "interpreter.cpp : interpret_binary_expression : else", error::ErrorImportance::MODERATE);
         }
       }
@@ -1261,33 +1205,7 @@ namespace interpreter
         std::unique_ptr<runtime_value> arg;
         ast::ASTVariant arg_variant = call->args[i];
         arg = interpret(&arg_variant, env, false);
-
-        if (!type_checker::is_matching_type(fn_val->parameters[i]->type, *arg))
-        {
-          std::string ordinal;
-          int pos = i + 1;
-          if ((pos % 100) / 10 == 1)
-            ordinal = std::to_string(pos) + "th";
-          else if (pos % 10 == 1)
-            ordinal = std::to_string(pos) + "st";
-          else if (pos % 10 == 2)
-            ordinal = std::to_string(pos) + "nd";
-          else if (pos % 10 == 3)
-            ordinal = std::to_string(pos) + "rd";
-          else
-            ordinal = std::to_string(pos) + "th";
-
-          error::Error err(
-              error::ErrorCode::RUNTIME_ERROR,
-              "Argument type mismatch for " + ordinal + " parameter '" + fn_val->parameters[i]->name +
-                  "'. Expected '" + fn_val->parameters[i]->type.raw_name +
-                  "' type, got '" + arg->type + "' type.",
-              call->linestart, call->lineend, call->columnstart, call->columnend,
-              "interpreter.cpp : interpret_call_expression : for",
-              error::ErrorImportance::MODERATE);
-          return std::make_unique<null_value>(is_returned);
-        }
-        closure->declare_variable(fn_val->parameters[i]->name, std::move(arg), &fn_val->parameters[i]->type, call->args[i], false, false);
+        closure->declare_variable(fn_val->parameters[i]->name, std::move(arg), call->args[i], false, false);
       }
       ast::ASTVariant variant(fn_val->body);
       return interpret(&variant, closure, is_returned);
@@ -1313,10 +1231,6 @@ namespace interpreter
           {
             if (auto arr = dynamic_cast<array_value *>((*ptr).get()))
             {
-              if (arr->elements.empty())
-              {
-                arr->type = "[]" + native_fn_val->return_type;
-              }
               args.push_back(std::move(*ptr));
               continue;
             }
@@ -1338,54 +1252,32 @@ namespace interpreter
         auto res = interpret(&arg_variant, env, false);
         /* [DEBUG**] */ std::cout << "[interpret_call_expression] Argument: " << res->to_string() << "\n";
         args.push_back(std::move(res));
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Argument pushed\n";
       }
+      /* [DEBUG**] */ std::cout << "[interpret_call_expression] Checking argument count\n";
       if (args.size() < native_fn_val->arity && native_fn_val->arity != -1)
       {
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Too few arguments\n";
         error::Error err(error::ErrorCode::RUNTIME_ERROR, "Native function '" + native_fn_val->name + "' called with too few arguments. Expected " + std::to_string(native_fn_val->arity) + " arguments, got " + std::to_string(args.size()) + " arguments.", call->linestart, call->lineend, call->columnstart, call->columnend, "interpreter.cpp : interpret_call_expression : if", error::ErrorImportance::MODERATE);
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Error displayed\n";
       }
       else if (args.size() > native_fn_val->arity && native_fn_val->arity != -1)
       {
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Too many arguments\n";
         error::Error err(error::ErrorCode::RUNTIME_ERROR, "Native function '" + native_fn_val->name + "' called with too many arguments. Expected " + std::to_string(native_fn_val->arity) + " arguments, got " + std::to_string(args.size()) + " arguments.", call->linestart, call->lineend, call->columnstart, call->columnend, "interpreter.cpp : interpret_call_expression : if", error::ErrorImportance::MODERATE);
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Error displayed\n";
       }
       else if (native_fn_val->arity == -1 || args.size() == native_fn_val->arity)
       {
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Correct number of arguments\n";
         auto finalval = native_fn_val->body(args, *call, env);
-        if (type_checker::is_matching_type(ast::Type(native_fn_val->return_type), *finalval) && native_fn_val->return_type.rfind("~", 0) != 0)
-        {
-          return finalval;
-        }
-        else if (native_fn_val->return_type.rfind("~", 0) == 0)
-        {
-          std::vector<std::string> types = type_checker::split_type(native_fn_val->return_type);
-          for (const auto &type : types)
-          {
-            if (type_checker::is_matching_type(ast::Type(type), *finalval))
-            {
-              return finalval;
-            }
-          }
-          error::Error err(
-              error::ErrorCode::RUNTIME_ERROR,
-              "Native function '" + native_fn_val->name + "' returned value type mismatch. Expected '" + native_fn_val->return_type.substr(1) + "', got '" + finalval->type + "'.",
-              call->linestart, call->lineend, call->columnstart, call->columnend,
-              "interpreter.cpp : interpret_call_expression : else",
-              error::ErrorImportance::MODERATE);
-          return finalval;
-        }
-        else
-        {
-          error::Error err(
-              error::ErrorCode::RUNTIME_ERROR,
-              "Native function '" + native_fn_val->name + "' returned value type mismatch. Expected '" + native_fn_val->return_type + "', got '" + finalval->type + "'.",
-              call->linestart, call->lineend, call->columnstart, call->columnend,
-              "interpreter.cpp : interpret_call_expression : else",
-              error::ErrorImportance::MODERATE);
-          return finalval;
-        }
+        /* [DEBUG**] */ std::cout << "[interpret_call_expression] Native function called\n";
         return finalval;
       }
+      /* [DEBUG**] */ std::cout << "[interpret_call_expression] Returning null\n";
       return std::make_unique<null_value>(is_returned);
     }
+    /* [DEBUG**] */ std::cout << "[interpret_call_expression] Returning null\n";
     return std::make_unique<null_value>(is_returned);
   }
 
@@ -1399,20 +1291,8 @@ namespace interpreter
     {
       ast::ASTVariant variant = var_decl->value;
       value = interpret(&variant, env, is_returned);
-      // New type-check on variable declaration expression
-      if (value && !type_checker::is_matching_type(var_decl->type, *value))
-      {
-        error::Error err(
-            error::ErrorCode::RUNTIME_ERROR,
-            "Variable declaration expression type mismatch for '" + var_decl->name +
-                "'. Expected '" + var_decl->type.raw_name + "', got '" + value->type + "'.",
-            var_decl->linestart, var_decl->lineend, var_decl->columnstart, var_decl->columnend,
-            "interpreter.cpp : interpret_variable_declaration_expression",
-            error::ErrorImportance::MODERATE);
-        return std::make_unique<null_value>(is_returned);
-      }
     }
-    std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), &var_decl->type, var_decl, false, false);
+    std::unique_ptr<runtime_value> finalval = env->declare_variable(var_decl->name, std::move(value), var_decl, false, false);
     return finalval;
   }
 
@@ -1466,7 +1346,7 @@ namespace interpreter
     else if (!assign || !assign->left || !assign->right)
     {
       /* [DEBUG**] */ std::cout << "[interpet_assignment_expression] Invalid assignment expression\n";
-      return std::make_unique<dummy_value>(); // replaced null_value
+      return std::make_unique<dummy_value>();
     }
 
     ast::ASTVariant left_variant = assign->left;
@@ -1474,67 +1354,6 @@ namespace interpreter
     ast::ASTVariant right_variant = assign->right;
     auto rhs = interpret(&right_variant, env, false);
 
-    // New type-check before assignment (for simple symbol assignments)
-    if (auto symExpr = dynamic_cast<ast::SymbolExpression *>(assign->left))
-    {
-      std::string varName = symExpr->value;
-      std::string expected = env->lookup_variable_type(varName, assign);
-      if (expected != "any" && expected != "nulltype" && !type_checker::is_matching_type(ast::Type(expected), *rhs))
-      {
-        error::Error err(
-            error::ErrorCode::RUNTIME_ERROR,
-            "Assignment type mismatch for variable '" + varName + "'. Expected '" +
-                expected + "', got '" + rhs->type + "'.",
-            assign->linestart, assign->lineend, assign->columnstart, assign->columnend,
-            "interpreter.cpp : interpret_assignment_expression",
-            error::ErrorImportance::MODERATE);
-        if (auto symExpr = dynamic_cast<ast::SymbolExpression *>(assign->left))
-        {
-          return env->assign_variable(symExpr->value, rhs->clone(), assign);
-        }
-        else if (auto mem_expr = dynamic_cast<ast::MemberExpression *>(assign->left))
-        {
-          std::string objectName;
-          if (auto symObj = dynamic_cast<ast::SymbolExpression *>(mem_expr->object))
-          {
-            objectName = symObj->value;
-          }
-          std::string propertyName;
-          if (auto symProp = dynamic_cast<ast::SymbolExpression *>(mem_expr->property))
-          {
-            propertyName = symProp->value;
-          }
-          else if (auto strProp = dynamic_cast<ast::StringExpression *>(mem_expr->property))
-          {
-            propertyName = strProp->value;
-          }
-          return env->assign_variable(objectName + "." + propertyName, rhs->clone(), assign);
-        }
-        return std::make_unique<null_value>(is_returned);
-
-        // Handle MemberExpression for assignment
-        if (auto mem_expr = dynamic_cast<ast::MemberExpression *>(assign->left))
-        {
-          std::string objectName;
-          if (auto symObj = dynamic_cast<ast::SymbolExpression *>(mem_expr->object))
-          {
-            objectName = symObj->value;
-          }
-          std::string propertyName;
-          if (auto symProp = dynamic_cast<ast::SymbolExpression *>(mem_expr->property))
-          {
-            propertyName = symProp->value;
-          }
-          else if (auto strProp = dynamic_cast<ast::StringExpression *>(mem_expr->property))
-          {
-            propertyName = strProp->value;
-          }
-          return env->assign_variable(objectName + "." + propertyName, rhs->clone(), assign);
-        }
-      }
-    }
-
-    // New: always update the variable and return the new value
     if (auto symExpr = dynamic_cast<ast::SymbolExpression *>(assign->left))
     {
       auto updated = env->assign_variable(symExpr->value, rhs->clone(), assign);
@@ -1592,7 +1411,6 @@ namespace interpreter
       {
         return std::make_unique<native_function_value>(
             "string",
-            "string",
             0,
             [num, is_returned](
                 const std::vector<
@@ -1608,7 +1426,6 @@ namespace interpreter
       if (auto str = dynamic_cast<string_value *>(obj.get()))
       {
         return std::make_unique<native_function_value>(
-            "string",
             "string",
             0,
             [str, is_returned](
@@ -1626,7 +1443,6 @@ namespace interpreter
       {
         return std::make_unique<native_function_value>(
             "string",
-            "string",
             0,
             [bool_val, is_returned](
                 const std::vector<
@@ -1643,7 +1459,6 @@ namespace interpreter
       if (auto obj_val = dynamic_cast<object_value *>(obj.get()))
       {
         return std::make_unique<native_function_value>(
-            "string",
             "string",
             -1,
             [obj_val, is_returned](
@@ -1688,12 +1503,12 @@ namespace interpreter
                 result += "}";
                 return std::make_unique<string_value>(result, is_returned);
               }
+              return std::make_unique<string_value>("<object>", is_returned);
             });
       }
       if (auto arr_val = dynamic_cast<array_value *>(obj.get()))
       {
         return std::make_unique<native_function_value>(
-            "string",
             "string",
             0,
             [arr_val, is_returned](
@@ -1723,7 +1538,6 @@ namespace interpreter
       {
         return std::make_unique<native_function_value>(
             "string",
-            "string",
             0,
             [null_val, is_returned](
                 const std::vector<
@@ -1740,7 +1554,6 @@ namespace interpreter
       if (auto dummy_val = dynamic_cast<dummy_value *>(obj.get()))
       {
         return std::make_unique<native_function_value>(
-            "string",
             "string",
             0,
             [dummy_val, is_returned](
@@ -1759,7 +1572,6 @@ namespace interpreter
       {
         return std::make_unique<native_function_value>(
             "string",
-            "string",
             0,
             [fn_val, is_returned](
                 const std::vector<
@@ -1775,26 +1587,18 @@ namespace interpreter
               for (size_t i = 0; i < fn_val->parameters.size(); i++)
               {
                 str += fn_val->parameters[i]->name;
-                if (&fn_val->parameters[i]->type != nullptr)
-                {
-                  str += ": ";
-                  str += fn_val->parameters[i]->type.name;
-                }
                 if (i + 1 < fn_val->parameters.size())
                 {
                   str += ", ";
                 }
               }
-              str += ") -> ";
-              str += fn_val->return_type.name;
-              str += " { ... }";
+              str += ") { ... }";
               return std::make_unique<string_value>(str, is_returned);
             });
       }
       if (auto native_fn_val = dynamic_cast<native_function_value *>(obj.get()))
       {
         return std::make_unique<native_function_value>(
-            "string",
             "string",
             0,
             [native_fn_val, is_returned](
@@ -1815,7 +1619,6 @@ namespace interpreter
       if (auto str = dynamic_cast<string_value *>(obj.get()))
       {
         return std::make_unique<native_function_value>(
-            "num",
             "num",
             0,
             [str, is_returned](
@@ -1847,7 +1650,6 @@ namespace interpreter
       {
         return std::make_unique<native_function_value>(
             "num",
-            "num",
             0,
             [num, is_returned](
                 const std::vector<
@@ -1864,7 +1666,6 @@ namespace interpreter
       if (auto bool_val = dynamic_cast<boolean_value *>(obj.get()))
       {
         return std::make_unique<native_function_value>(
-            "num",
             "num",
             0,
             [bool_val, is_returned](
@@ -1888,7 +1689,6 @@ namespace interpreter
         {
           return std::make_unique<native_function_value>(
               "push",
-              "null",
               1,
               [arr, ref, is_returned](
                   const std::vector<
@@ -1899,48 +1699,57 @@ namespace interpreter
                   ast::Expression &error_expr,
                   interpreter::Environment *env) -> std::unique_ptr<runtime_value>
               {
-                auto variable_type = env->lookup_variable_type(ref->name, &error_expr);
+                /* [DEBUG**] */ std::cout << "[interpret_member_expression] Array push\n";
                 bool is_constant = env->is_variable_constant(ref->name);
+                /* [DEBUG**] */ std::cout << "[interpret_member_expression] Made variable 'is_constant'\n";
                 bool is_public = env->is_variable_public(ref->name);
+                /* [DEBUG**] */ std::cout << "[interpret_member_expression] Made variable 'is_public'\n";
+
+                if (args.empty())
+                {
+                  /* [DEBUG**] */ std::cout << "[interpret_member_expression] No arguments provided for 'push'\n";
+                  error::Error err(
+                      error::ErrorCode::RUNTIME_ERROR,
+                      "No arguments provided for 'push' property.",
+                      error_expr.linestart, error_expr.lineend, error_expr.columnstart, error_expr.columnend,
+                      "interpreter.cpp : interpret_member_expression : for",
+                      error::ErrorImportance::MODERATE);
+                  return std::make_unique<null_value>(is_returned);
+                }
+
                 auto elem = std::get_if<std::unique_ptr<runtime_value>>(&args[0]);
+                /* [DEBUG**] */ std::cout << "[interpret_member_expression] Got element\n";
                 if (!elem)
                 {
+                  /* [DEBUG**] */ std::cout << "[interpret_member_expression] Invalid argument for 'push' property\n";
                   error::Error err(
                       error::ErrorCode::RUNTIME_ERROR,
                       "Invalid argument for 'push' property.",
                       error_expr.linestart, error_expr.lineend, error_expr.columnstart, error_expr.columnend,
                       "interpreter.cpp : interpret_member_expression : for",
                       error::ErrorImportance::MODERATE);
+                  /* [DEBUG**] */ std::cout << "[interpret_member_expression] Returning null\n";
                   return std::make_unique<null_value>(is_returned);
                 }
-                if (!type_checker::is_matching_type(ast::Type(variable_type), **elem))
-                {
-                  error::Error err(
-                      error::ErrorCode::RUNTIME_ERROR,
-                      "Array push type mismatch. Expected '" + variable_type + "', got '" + (**elem).type + "'.",
-                      error_expr.linestart, error_expr.lineend, error_expr.columnstart, error_expr.columnend,
-                      "interpreter.cpp : interpret_member_expression : for",
-                      error::ErrorImportance::MODERATE);
-                  return std::make_unique<null_value>(is_returned);
-                }
-                else
+                /* [DEBUG**] */ std::cout << "[interpret_member_expression] Pushing element\n";
+                if (arr && *elem)
                 {
                   arr->elements.push_back((*elem)->clone());
-                  // env->delete_variable(ref->name, &error_expr);
-                  // env->declare_variable(ref->name, std::make_unique<array_value>(*arr), new ast::Type(variable_type), &error_expr, is_constant, is_public);
-                  env->assign_variable(ref->name, std::make_unique<array_value>(*arr), &error_expr);
-                  /* [DEBUG**] */ std::cout << "[interpret_member_expression] Array push: " << print_value(*arr) << "\n";
-                  return std::make_unique<null_value>(is_returned);
                 }
+                /* [DEBUG**] */ std::cout << "[interpret_member_expression] Assigning variable\n";
+                // env->delete_variable(ref->name, &error_expr);
+                // env->declare_variable(ref->name, std::make_unique<array_value>(*arr), new ast::Type(variable_type), &error_expr, is_constant, is_public);
+                env->assign_variable(ref->name, arr->clone(), &error_expr);
+                /* [DEBUG**] */ std::cout << "[interpret_member_expression] Array push: " << print_value(*arr) << "\n";
+                return std::make_unique<null_value>(is_returned);
               });
         }
         else
         {
           return std::make_unique<native_function_value>(
               "push",
-              "null",
               1,
-              [arr, is_returned](
+              [mem, is_returned](
                   const std::vector<
                       std::variant<
                           std::unique_ptr<runtime_value>,
@@ -1949,6 +1758,29 @@ namespace interpreter
                   ast::Expression &error_expr,
                   interpreter::Environment *env) -> std::unique_ptr<runtime_value>
               {
+                auto ref = dynamic_cast<ast::ReferenceExpression *>(mem->object);
+                if (!ref)
+                {
+                  error::Error err(
+                      error::ErrorCode::RUNTIME_ERROR,
+                      "Invalid array reference in 'push' property.",
+                      error_expr.linestart, error_expr.lineend, error_expr.columnstart, error_expr.columnend,
+                      "interpreter.cpp : interpret_member_expression : push",
+                      error::ErrorImportance::MODERATE);
+                  return std::make_unique<null_value>(is_returned);
+                }
+                runtime_value *array_obj = env->lookup_variable(ref->name, &error_expr);
+                auto arr = dynamic_cast<array_value *>(array_obj);
+                if (!arr)
+                {
+                  error::Error err(
+                      error::ErrorCode::RUNTIME_ERROR,
+                      "Variable '" + ref->name + "' is not an array in 'push' property.",
+                      error_expr.linestart, error_expr.lineend, error_expr.columnstart, error_expr.columnend,
+                      "interpreter.cpp : interpret_member_expression : push",
+                      error::ErrorImportance::MODERATE);
+                  return std::make_unique<null_value>(is_returned);
+                }
                 auto elem = std::get_if<std::unique_ptr<runtime_value>>(&args[0]);
                 if (!elem)
                 {
@@ -1956,7 +1788,7 @@ namespace interpreter
                       error::ErrorCode::RUNTIME_ERROR,
                       "Invalid argument for 'push' property.",
                       error_expr.linestart, error_expr.lineend, error_expr.columnstart, error_expr.columnend,
-                      "interpreter.cpp : interpret_member_expression : for",
+                      "interpreter.cpp : interpret_member_expression : push",
                       error::ErrorImportance::MODERATE);
                   return std::make_unique<null_value>(is_returned);
                 }
@@ -1988,22 +1820,22 @@ namespace interpreter
   //*---------------
   std::string print_value(const interpreter::runtime_value &value)
   {
-    if (value.type == "number")
+    if (static_cast<const interpreter::number_value *>(&value) != nullptr)
     {
       const interpreter::number_value &num = static_cast<const interpreter::number_value &>(value);
       return std::to_string(num.value);
     }
-    else if (value.type == "string")
+    else if (static_cast<const interpreter::string_value *>(&value) != nullptr)
     {
       const interpreter::string_value &str = static_cast<const interpreter::string_value &>(value);
       return str.value;
     }
-    else if (value.type == "boolean")
+    else if (static_cast<const interpreter::boolean_value *>(&value) != nullptr)
     {
       const interpreter::boolean_value &bool_val = static_cast<const interpreter::boolean_value &>(value);
       return bool_val.value ? "true" : "false";
     }
-    else if (value.type == "function")
+    else if (static_cast<const interpreter::function_value *>(&value) != nullptr)
     {
       const interpreter::function_value &fn = static_cast<const interpreter::function_value &>(value);
       std::string str;
@@ -2011,22 +1843,15 @@ namespace interpreter
       for (size_t i = 0; i < fn.parameters.size(); i++)
       {
         str += fn.parameters[i]->name;
-        if (&fn.parameters[i]->type != nullptr)
-        {
-          str += ": ";
-          str += fn.parameters[i]->type.name;
-        }
         if (i + 1 < fn.parameters.size())
         {
           str += ", ";
         }
       }
-      str += ") -> ";
-      str += fn.return_type.name;
-      str += " { ... }";
+      str += ") { ... }";
       return str;
     }
-    else if (value.type == "object")
+    else if (static_cast<const interpreter::object_value *>(&value) != nullptr)
     {
       const interpreter::object_value &obj = static_cast<const interpreter::object_value &>(value);
       std::string s = "{";
@@ -2037,7 +1862,7 @@ namespace interpreter
       s += "}";
       return s;
     }
-    else if (value.type == "array" || value.type.rfind("[]", 0) == 0)
+    else if (static_cast<const interpreter::array_value *>(&value) != nullptr)
     {
       const interpreter::array_value &arr = static_cast<const interpreter::array_value &>(value);
       std::string s = "[";
@@ -2052,15 +1877,18 @@ namespace interpreter
       s += "]";
       return s;
     }
-    else if (value.type == "null")
+    else if (static_cast<const interpreter::null_value *>(&value) != nullptr)
     {
       return "null";
     }
-    else if (value.type == "null")
+    else if (static_cast<const interpreter::dummy_value *>(&value) != nullptr)
     {
-      return "null";
+      return "<dummy>";
     }
-    // Add more types as needed
+    else if (static_cast<const interpreter::native_function_value *>(&value) != nullptr)
+    {
+      return "<native function>";
+    }
     else
     {
       return "<unknown>";

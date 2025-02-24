@@ -83,7 +83,6 @@ namespace parser
   parser_ create_parser_(const std::vector<lexer::Token> &tokens)
   {
     create_token_lookups();
-    create_token_type_lookups();
     parser::parser_ p(tokens);
     p.tokens = tokens;
     p.pos = 0;
@@ -232,99 +231,6 @@ namespace parser
       return left ? left : new ast::DummyExpression(); });
   }
 
-  //*--------------------
-  //*    TYPE LOOKUPS
-  //*--------------------
-  type_nud_lookup type_nud_lu;
-  type_led_lookup type_led_lu;
-  type_binding_power_lookup type_binding_power_lu;
-
-  void type_led(lexer::TokenKind kind, BindingPower binding_power, type_led_handler *handler)
-  {
-    type_led_lu[kind] = handler;
-    type_binding_power_lu[kind] = new BindingPower(binding_power);
-  }
-
-  void type_nud(lexer::TokenKind kind, type_nud_handler *handler)
-  {
-    type_nud_lu[kind] = handler;
-    type_binding_power_lu[kind] = new BindingPower(PRIMARY);
-  }
-
-  void create_token_type_lookups()
-  {
-    type_nud(lexer::TokenKind::IDENTIFIER, parse_symbol_type);
-    type_nud(lexer::TokenKind::OPEN_SQUARE, parse_array_type);
-  }
-
-  ast::Type *parse_symbol_type(parser_ &parser)
-  {
-    lexer::Token token = parser.expect(lexer::TokenKind::IDENTIFIER, "parser.cpp : parse_symbol_type() : Expected type name");
-    ast::Type *type = new ast::Type();
-    type->name = token.value;
-    type->raw_name = token.value;
-    type->linestart = token.linestart;
-    type->lineend = token.lineend;
-    type->columnstart = token.columnstart;
-    type->columnend = token.columnend;
-    return type;
-  }
-
-  ast::Type *parse_array_type(parser_ &parser)
-  {
-    lexer::Token open_square = parser.expect(lexer::TokenKind::OPEN_SQUARE, "parser.cpp : parse_array_type() : Expected '['");
-    ast::ArrayType *type = new ast::ArrayType();
-    type->linestart = open_square.linestart;
-    type->columnstart = open_square.columnstart;
-    lexer::Token close_square = parser.expect(lexer::TokenKind::CLOSE_SQUARE, "parser.cpp : parse_array_type() : Expected ']'");
-    type->element_type = parse_type(parser, DEFAULT);
-    type->raw_name = "[]" + type->element_type.name;
-    type->lineend = type->element_type.lineend;
-    type->columnend = type->element_type.columnend;
-    return type;
-  }
-
-  ast::Type parse_type(parser_ &parser, BindingPower binding_power)
-  {
-    lexer::TokenKind token_kind = parser.current_kind();
-    auto nud_handler = type_nud_lu[token_kind];
-    if (nud_handler == nullptr)
-    {
-      error::Error err(
-          error::ErrorCode::PARSER_ERROR,
-          "No type_NUD function found for token of kind '" + lexer::token_kind_to_string(token_kind) + "'",
-          parser.current_token().linestart,
-          parser.current_token().lineend,
-          parser.current_token().columnstart,
-          parser.current_token().columnend,
-          "parser.cpp : parse_type()",
-          error::ErrorImportance::HIGH);
-      return ast::Type();
-    }
-    auto left = nud_handler(parser);
-    while (type_binding_power_lu.count(parser.current_kind()) > binding_power)
-    {
-      token_kind = parser.current_kind();
-      auto led_handler = type_led_lu[token_kind];
-      if (led_handler == nullptr)
-      {
-        error::Error err(
-            error::ErrorCode::PARSER_ERROR,
-            "No type_LED function found for token of kind '" + lexer::token_kind_to_string(token_kind) + "'",
-            parser.current_token().linestart,
-            parser.current_token().lineend,
-            parser.current_token().columnstart,
-            parser.current_token().columnend,
-            "parser.cpp : parse_type() : while loop",
-            error::ErrorImportance::HIGH);
-        return *left;
-      }
-      left = led_handler(parser, left, *type_binding_power_lu[parser.current_kind()]);
-    }
-
-    return *left;
-  }
-
   //*------------------
   //*    STATEMENTS
   //*------------------
@@ -368,7 +274,6 @@ namespace parser
   {
     ast::VariableDeclarationStatement *var_decl = new ast::VariableDeclarationStatement();
     lexer::Token keyword = parser.current_token();
-    ast::Type type;
     std::vector<ast::Expression *> fields;
     ast::Expression *value = nullptr;
     bool is_const = false;
@@ -400,22 +305,12 @@ namespace parser
 
     lexer::Token identifier = parser.expect(lexer::TokenKind::IDENTIFIER, "parser.cpp : parse_variable_declaration_statement() : Expected identifier after 'let' or 'const'");
 
-    if (parser.current_kind() == lexer::TokenKind::COLON)
-    {
-      parser.advance();
-      type = parse_type(parser, DEFAULT);
-    }
-
     if (parser.current_kind() == lexer::TokenKind::ASSIGNMENT)
     {
       parser.advance();
       value = parse_expression(parser, ASSIGNMENT);
     }
-    else
-    {
-      // Removed the redundant check that threw "Expected ';', got..."
-      // when we already confirm with parser.expect below.
-    }
+
     lexer::Token semicolon = parser.expect(
         lexer::TokenKind::SEMICOLON,
         "parser.cpp : parse_variable_declaration_statement() : Expected ';' after variable declaration");
@@ -437,7 +332,6 @@ namespace parser
     var_decl->kind = ast::StatementKind::VARIABLE_DECLARATION_STATEMENT;
     var_decl->name = identifier.value;
     var_decl->value = value;
-    var_decl->type = type;
     var_decl->is_const = is_const;
     var_decl->is_public = is_public;
     var_decl->linestart = keyword.linestart;
@@ -460,12 +354,6 @@ namespace parser
     // [DEBUG**]std::cout << "  [parse_function_declaration_statement] current token: " << parser.current_token().value << std::endl;
     std::vector<ast::ParameterExpression *> parameters = parse_parameters(parser);
     parser.expect(lexer::TokenKind::CLOSE_PAREN, "parser.cpp : parse_function_declaration_statement() : Expected ')' after function parameters");
-
-    if (parser.current_kind() == lexer::TokenKind::TYPE_ARROW)
-    {
-      parser.advance();
-      fn_decl->return_type = parse_type(parser, DEFAULT);
-    }
 
     ast::BlockStatement *block = dynamic_cast<ast::BlockStatement *>(parse_block_statement(parser));
     fn_decl->kind = ast::StatementKind::FUNCTION_DECLARATION_STATEMENT;
@@ -864,7 +752,6 @@ namespace parser
   {
     ast::VariableDeclarationExpression *var_decl = new ast::VariableDeclarationExpression();
     lexer::Token keyword = parser.current_token();
-    ast::Type type;
     std::vector<ast::Expression *> fields;
     ast::Expression *value = nullptr;
     bool is_const = false;
@@ -896,12 +783,6 @@ namespace parser
 
     lexer::Token identifier = parser.expect(lexer::TokenKind::IDENTIFIER, "parser.cpp : parse_variable_declaration_expression() : Expected identifier after 'let' or 'const'");
 
-    if (parser.current_kind() == lexer::TokenKind::COLON)
-    {
-      parser.advance();
-      type = parse_type(parser, DEFAULT);
-    }
-
     if (parser.current_kind() == lexer::TokenKind::ASSIGNMENT)
     {
       parser.advance();
@@ -911,7 +792,6 @@ namespace parser
     var_decl->kind = ast::StatementKind::VARIABLE_DECLARATION_EXPRESSION;
     var_decl->name = identifier.value;
     var_decl->value = value;
-    var_decl->type = type;
     var_decl->is_const = is_const;
     var_decl->is_public = is_public;
     var_decl->linestart = keyword.linestart;
@@ -1084,14 +964,7 @@ namespace parser
       param->linestart = identifier.linestart;
       param->columnstart = identifier.columnstart;
 
-      // Parse parameter type
-      if (parser.current_kind() == lexer::TokenKind::COLON)
-      {
-        parser.advance(); // consume colon
-
-        param->type = parse_type(parser, DEFAULT);
-        params.push_back(param);
-      }
+      params.push_back(param);
       first_param = false;
     }
 

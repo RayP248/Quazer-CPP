@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <variant>
+#include <memory>
 
 namespace ast
 {
@@ -67,28 +68,6 @@ namespace ast
         delete stmt;
       }
     }
-  };
-
-  //*-------------
-  //*    TYPES
-  //*-------------
-  struct Type : public Expression
-  {
-    std::string name;
-    std::string raw_name;
-    std::vector<Type> generics;
-    std::vector<Type> fields;
-
-    bool is_inferred = false;
-    Type() : is_inferred(true) {}
-    Type(const std::string &name) : name(name), raw_name(name), is_inferred(false) {}
-    Type(const std::string &name, const std::vector<Type> &generics) : name(name), generics(generics), is_inferred(false) {}
-  };
-
-  struct ArrayType : public Type
-  {
-    ast::Type element_type;
-    ArrayType() {}
   };
 
   //*-------------------
@@ -237,7 +216,6 @@ namespace ast
   {
     std::string name;
     Expression *value = nullptr;
-    Type type;
     bool is_const = false;
     bool is_public = false;
     VariableDeclarationExpression()
@@ -316,7 +294,6 @@ namespace ast
   {
     std::string name;
     Expression *value = nullptr;
-    Type type;
     bool is_const = false;
     bool is_public = false;
 
@@ -333,7 +310,6 @@ namespace ast
   struct ParameterExpression : public Expression
   {
     std::string name;
-    Type type;
   };
 
   struct FunctionDeclarationStatement : public Statement
@@ -342,7 +318,6 @@ namespace ast
     std::vector<ParameterExpression *> parameters;
     BlockStatement *body;
     ReturnStatement *return_statement;
-    Type return_type;
     FunctionDeclarationStatement()
     {
       kind = StatementKind::FUNCTION_DECLARATION_STATEMENT;
@@ -423,11 +398,10 @@ namespace ast
       ast::AssignmentExpression *,
       ast::VariableDeclarationExpression *,
       ast::MemberExpression *,
-      ast::Type *,
-      ast::ArrayType *,
       ast::ParameterExpression *,
-      ast::Statement *  // Fallback for any other Statement type
-    > ASTVariant;
+      ast::Statement * // Fallback for any other Statement type
+      >
+      ASTVariant;
   // TODO: Define new AST node structures for additional language constructs.
   // Example:
   /*

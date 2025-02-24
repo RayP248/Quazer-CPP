@@ -20,7 +20,6 @@ namespace lexer {
     STAR,         // *
     SLASH,        // /
     PERCENT,      // %
-    TYPE_ARROW,   // ->
     LAMBDA_ARROW, // :>
     DOT,          // .
     DOT_DOT,      // ..

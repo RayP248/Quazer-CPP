@@ -42,7 +42,6 @@ namespace lexer {
       {"<=", lexer::TokenKind::LESS_EQUAL},
       {"&&", lexer::TokenKind::AND},
       {"||", lexer::TokenKind::OR},
-      {"->", lexer::TokenKind::TYPE_ARROW},
       {":>", lexer::TokenKind::LAMBDA_ARROW},
       {"'", lexer::TokenKind::SINGLE_QUOTE},
       {"\"", lexer::TokenKind::DOUBLE_QUOTE},
@@ -99,8 +98,6 @@ namespace lexer {
       return "SLASH";
     case TokenKind::PERCENT:
       return "PERCENT";
-    case TokenKind::TYPE_ARROW:
-      return "TYPE_ARROW";
     case TokenKind::LAMBDA_ARROW:
       return "LAMBDA_ARROW";
     case TokenKind::DOT:
@@ -236,8 +233,6 @@ namespace lexer {
       return "/";
     case TokenKind::PERCENT:
       return "%";
-    case TokenKind::TYPE_ARROW:
-      return "->";
     case TokenKind::LAMBDA_ARROW:
       return ":>";
     case TokenKind::DOT:

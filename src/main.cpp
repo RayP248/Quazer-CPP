@@ -89,43 +89,9 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       return std::string(indent, ' ');
     };
 
-    std::function<std::string(const ast::Type *, int)> printType;
     std::function<std::string(const std::pair<ast::Expression *, ast::Expression *>, int)> printProp;
     std::function<std::string(const ast::Statement *, int)> printStmt;
     std::function<std::string(const ast::Expression *, int)> printExpr;
-
-    printType = [&](const ast::Type *node, int level) -> std::string
-    {
-      if (!node)
-      {
-        return "";
-      }
-
-      std::string result;
-      result += indentFunc(level) + "Type {\n";
-      result += indentFunc(level + 2) + "name: \"" + node->name +
-                "\",\n";
-      std::string generics_str = "[";
-      for (size_t i = 0; i < node->generics.size(); ++i)
-      {
-        generics_str += printType(&node->generics[i], level + 2);
-        if (i + 1 < node->generics.size())
-          generics_str += ", ";
-      }
-      generics_str += "]";
-      result += indentFunc(level + 2) + "generics: " + generics_str + ",\n";
-      std::string fields_str = "[";
-      for (size_t i = 0; i < node->fields.size(); ++i)
-      {
-        fields_str += printType(&node->fields[i], level + 2);
-        if (i + 1 < node->fields.size())
-          fields_str += ", ";
-      }
-      fields_str += "]";
-      result += indentFunc(level + 2) + "is_inferred: " + std::to_string(node->is_inferred) + ",\n";
-      result += indentFunc(level) + "}";
-      return result;
-    };
 
     printProp = [&](const std::pair<ast::Expression *, ast::Expression *> node, int level) -> std::string
     {
@@ -184,7 +150,6 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       else if (auto paramExpr = dynamic_cast<const ast::ParameterExpression *>(node))
       {
         result += "\n" + indentFunc(level + 2) + "name: \"" + paramExpr->name + "\",\n";
-        result += indentFunc(level + 2) + "type: \n" + printType(&paramExpr->type, level + 4);
       }
       else if (auto callExpr = dynamic_cast<const ast::CallExpression *>(node))
       {
@@ -201,7 +166,6 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       else if (auto varDeclExpr = dynamic_cast<const ast::VariableDeclarationExpression *>(node))
       {
         result += ",\n" + indentFunc(level + 2) + "name: \"" + varDeclExpr->name + "\",\n";
-        result += indentFunc(level + 2) + "type: \n" + printType(&varDeclExpr->type, level + 4) + ",\n";
         result += indentFunc(level + 2) + "value: \n" + printExpr(varDeclExpr->value, level + 4) + ",\n";
         result += indentFunc(level + 2) + "is_const: " + (varDeclExpr->is_const ? "true" : "false") + ",\n";
         result += indentFunc(level + 2) + "is_public: " + (varDeclExpr->is_public ? "true" : "false");
@@ -285,7 +249,6 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
       else if (auto var_decl_stmt = dynamic_cast<const ast::VariableDeclarationStatement *>(node))
       {
         result += ",\n" + indentFunc(level + 2) + "name: \"" + var_decl_stmt->name + "\",\n";
-        result += indentFunc(level + 2) + "type: \n" + printType(&var_decl_stmt->type, level + 4) + ",\n";
         result += indentFunc(level + 2) + "value: \n" + printExpr(var_decl_stmt->value, level + 4) + ",\n";
         result += indentFunc(level + 2) + "is_const: " + (var_decl_stmt->is_const ? "true" : "false") + ",\n";
         result += indentFunc(level + 2) + "is_public: " + (var_decl_stmt->is_public ? "true" : "false");
@@ -302,7 +265,6 @@ static std::string print_AST(const ast::Program *stmt, int indent = 0)
         }
         result += "\n" + indentFunc(level + 2) + "],\n";
         result += indentFunc(level + 2) + "body: \n" + printStmt(fn_decl_stmt->body, level + 4) + ",\n";
-        result += indentFunc(level + 2) + "return_type: \n" + printType(&fn_decl_stmt->return_type, level + 4);
 
         result += "\n" + indentFunc(level + 2) + "return_statement: nullptr";
       }

@@ -8,12 +8,6 @@ Program {
       columnstart: 0,
       columnend: 14,
       name: "nums",
-      type: 
-        Type {
-          name: "",
-          generics: [],
-          is_inferred: 1,
-        },
       value: 
         ArrayExpression {
           kind: 13,
@@ -84,12 +78,6 @@ Program {
           columnstart: 5,
           columnend: 14,,
           name: "i",
-          type: 
-            Type {
-              name: "",
-              generics: [],
-              is_inferred: 1,
-            },
           value: 
             NumberExpression {
               kind: 9,
